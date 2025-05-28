@@ -82,7 +82,7 @@ using duration_type = rmz::seconds; rmz::timer timer(duration_type(10));
 // ============ DECLARATIONS ============
 // ======================================
 
-void action(const std::vector<std::string>& input);
+bool action(const std::vector<std::string>& input);
 
 struct WallpaperManager {
     static std::vector<std::string> folders;
@@ -260,6 +260,13 @@ struct ConsoleManager {
     static void set_error_message(const std::string& message) {
         error_message = message;
     }
+    static void add_error_message(const std::string& message) {
+        if (error_message.empty()) {
+            error_message = message;
+        } else {
+            error_message += '\n' + message;
+        }
+    }
 
     static void signal_update() {
         signaled.store(true);
@@ -312,7 +319,9 @@ struct Parameters {
     static void load(const std::string& name) {
         auto parameters = read(name);
         for (auto& parameter : parameters) {
-            action(parameter);
+            if (not action(parameter)) {
+                ConsoleManager::add_error_message(std::format("* Command '{}' not recognized in file '{}'", parameter[0], name));
+            }
         }
     }
 
@@ -345,8 +354,9 @@ private:
 };
 
 
-void action(const std::vector<std::string>& input) {
-    bool unknown_command = false;
+
+bool action(const std::vector<std::string>& input) {
+    bool valid_command = true;
     std::string command = input[0];
     
     if (command == "order") {
@@ -387,12 +397,14 @@ void action(const std::vector<std::string>& input) {
         ConsoleManager::signal_update();
 
     } else {
-        ConsoleManager::set_error_message(std::format("* Command '{}' not recognized", command));
-        unknown_command = true;
+        valid_command = false;
+    }
+
+    if (valid_command) {
+        ConsoleManager::clear_error_message();
     }
     
-    if (not unknown_command)
-        ConsoleManager::clear_error_message();
+    return valid_command;
 }
 
 
@@ -468,9 +480,11 @@ void main_function() {
             break;
 
         } else {
-            action(input);
+            if (not action(input)) {
+                ConsoleManager::set_error_message(std::format("* Command '{}' not recognized", command));
+            }
         }
-     
+
     }
 
     Parameters::save("settings.wallpaper");
