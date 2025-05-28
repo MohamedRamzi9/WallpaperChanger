@@ -44,6 +44,26 @@ std::string join_string(const std::vector<std::string>& vec, char delimiter) {
     return result;
 }
 
+rmz::type::nullable<std::chrono::seconds> parse_duration(const std::string& input) {
+    if (input.empty()) return {};
+
+    // Check last character is 's' or 'm'
+    char last = input.back();
+    if (last != 's' && last != 'm') return {};
+
+    // Extract numeric part
+    std::string numberPart = input.substr(0, input.size() - 1);
+
+    // Check if all characters in numberPart are digits
+    if (numberPart.empty() || !std::all_of(numberPart.begin(), numberPart.end(), ::isdigit))
+        return {};
+
+    int value; char unit;
+    value = std::stoi(numberPart);
+    unit = last;
+    return {unit == 's' ? std::chrono::seconds(value) : std::chrono::minutes(value)};
+}
+
 
 
 
@@ -62,7 +82,7 @@ using duration_type = rmz::seconds; rmz::timer timer(duration_type(10));
 // ============ DECLARATIONS ============
 // ======================================
 
-
+void action(const std::vector<std::string>& input);
 
 struct WallpaperManager {
     static std::vector<std::string> folders;
@@ -287,20 +307,13 @@ std::string ConsoleManager::error_message;
 
 struct Parameters {
     
-    static void initialize() {
-        
-    }
+    static void initialize() {}
 
-    static std::vector<std::vector<std::string>> load(const std::string& name) {
-        std::vector<std::vector<std::string>> result;
-        std::ifstream file(name);
-
-        std::string line;
-        while (std::getline(file, line)) {
-            std::vector<std::string> tokens = split_string(line, ' ');
-            result.push_back(tokens);
+    static void load(const std::string& name) {
+        auto parameters = read(name);
+        for (auto& parameter : parameters) {
+            action(parameter);
         }
-        return result;
     }
 
     static void save(const std::string& name) {
@@ -313,68 +326,23 @@ struct Parameters {
         file.close();
     }
 
-    private: static void write_line(std::ofstream& file, const std::string& line) {
+private:
+    static void write_line(std::ofstream& file, const std::string& line) {
         file << line << '\n';
+    }
+    static std::vector<std::vector<std::string>> read(const std::string& name) {
+        std::vector<std::vector<std::string>> result;
+        std::ifstream file(name);
+
+        std::string line;
+        while (std::getline(file, line)) {
+            std::vector<std::string> tokens = split_string(line, ' ');
+            result.push_back(tokens);
+        }
+        return result;
     }
 
 };
-
-
-
-
-
-
-// =================================================
-// ========== WALLPAPER CHANGER SERVICE ============
-// =================================================
-
-
-void service_wallpaper_changer() {
-    while (true) {
-        if (state.load() == STOPPED) {
-            return;
-        } else if (state.load() == PAUSED) {
-            pause_semaphore.acquire();
-            continue;
-        } 
-        if (WallpaperManager::empty()) {
-            empty_semaphore.acquire();
-            continue;
-        } else if (not timer.is_done()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue;
-        }
-        timer.init();
-        std::string wallpaper = WallpaperChanger::set_next_wallpaper();
-
-        ConsoleManager::set_wallpaper_changed_message(std::format("* New wallpaper : '{}'", wallpaper));
-        ConsoleManager::signal_update();
-
-    }
-}
-
-
-
-
-rmz::type::nullable<std::chrono::seconds> parse_duration(const std::string& input) {
-    if (input.empty()) return {};
-
-    // Check last character is 's' or 'm'
-    char last = input.back();
-    if (last != 's' && last != 'm') return {};
-
-    // Extract numeric part
-    std::string numberPart = input.substr(0, input.size() - 1);
-
-    // Check if all characters in numberPart are digits
-    if (numberPart.empty() || !std::all_of(numberPart.begin(), numberPart.end(), ::isdigit))
-        return {};
-
-    int value; char unit;
-    value = std::stoi(numberPart);
-    unit = last;
-    return {unit == 's' ? std::chrono::seconds(value) : std::chrono::minutes(value)};
-}
 
 
 void action(const std::vector<std::string>& input) {
@@ -428,10 +396,48 @@ void action(const std::vector<std::string>& input) {
 }
 
 
+
+
+
+// =================================================
+// ========== WALLPAPER CHANGER SERVICE ============
+// =================================================
+
+
+void service_wallpaper_changer() {
+    while (true) {
+        if (state.load() == STOPPED) {
+            return;
+        } else if (state.load() == PAUSED) {
+            pause_semaphore.acquire();
+            continue;
+        } 
+        if (WallpaperManager::empty()) {
+            empty_semaphore.acquire();
+            continue;
+        } else if (not timer.is_done()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        timer.init();
+        std::string wallpaper = WallpaperChanger::set_next_wallpaper();
+
+        ConsoleManager::set_wallpaper_changed_message(std::format("* New wallpaper : '{}'", wallpaper));
+        ConsoleManager::signal_update();
+
+    }
+}
+
+
+
+
+
+// ========================================
+// ============ MAIN FUNCTION =============
+// ========================================
+
 void main_function() {
 
-
-    
     // Path to the image file
     ConsoleManager::initialize();
     WallpaperManager::initialize(); 
@@ -441,11 +447,7 @@ void main_function() {
     Parameters::initialize();
 
     // Load parameters from file
-    auto parameters = Parameters::load("settings.wallpaper");
-    for (auto& parameter : parameters) {
-        action(parameter);
-    }
-    
+    Parameters::load("settings.wallpaper");
 
     std::thread wallpaper_thread(service_wallpaper_changer);
 
@@ -480,6 +482,5 @@ void main_function() {
 int main() {
 
     main_function();
-    // test_function();
     return 0;
 }

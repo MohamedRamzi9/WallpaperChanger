@@ -1,4 +1,9 @@
+# How to use
+launch the executable after building the project. then use the commands below in the terminal to control the program.
+
 # Commands
+the values in `<>` are placeholders and should be replaced with the actual values you want to use.
+
 - `set <path>` : sets the current wallpaper to the image at `<path>`
 - `<int><s/m>` : set duration for the wallpaper to change, e.g. `10s` or `5m`
 - `next` : changes to the next wallpaper in the list

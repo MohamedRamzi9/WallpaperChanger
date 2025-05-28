@@ -1,3 +1,5 @@
 
 - add the following commands :
-	- refresh : reloads the wallpaper list from the specified folder
+	- paramters : diplays the current parameters of the program 
+	- help : displays the help message with all commands and their descriptions
+	- 
