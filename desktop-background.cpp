@@ -35,7 +35,7 @@ std::vector<std::string> split_string(const std::string& str, char delimiter) {
     return result;
 }
 
-std::string join_string(const std::vector<std::string>& vec, char delimiter) {
+std::string join_string(const std::vector<std::string>& vec, const std::string& delimiter) {
     if (vec.empty()) return "";
     std::string result = vec[0];
     for (size_t i = 1; i < vec.size(); ++i) {
@@ -83,6 +83,44 @@ using duration_type = rmz::seconds; rmz::timer timer(duration_type(10));
 // ======================================
 
 bool action(const std::vector<std::string>& input);
+
+
+struct CommandManager {
+    static std::vector<std::string> commands_string;
+    static std::vector<std::string> commands_description;
+
+    static void initialize() {
+        commands_string = {
+            "<int><s|m>", "order", "random", "pause", "resume", "next", "previous", "set <path>", "add <path>", "exit", "help", "clear", "parameters",
+        };
+        commands_description = {
+            "Set the wallpaper change interval (e.g., '10s' for 10 seconds, '5m' for 5 minutes).",
+            "Set wallpaper change order to sequential.",
+            "Set wallpaper change order to random.",
+            "Pause the automatic wallpaper changer.",
+            "Resume the automatic wallpaper changer.",
+            "Manually set the next wallpaper in the current order.",
+            "Manually set the previous wallpaper in the current order.",
+            "Set the wallpaper to a specific image file.",
+            "Add a folder to the list of wallpaper folders and load its wallpapers.",
+            "Exit the program.",
+            "Show this help message.",
+            "Clear the help and error messages.",
+            "Show the current parameters.",
+        };
+    }
+    static std::vector<std::string>& get_commands_string() {
+        return commands_string;
+    }
+    static std::vector<std::string>& get_commands_description() {
+        return commands_description;
+    }
+};
+std::vector<std::string> CommandManager::commands_string;
+std::vector<std::string> CommandManager::commands_description;
+
+
+
 
 struct WallpaperManager {
     static std::vector<std::string> folders;
@@ -247,18 +285,16 @@ struct ConsoleManager {
     static std::atomic<bool> signaled;
     static std::string wallpaper_changed_message;
     static std::string error_message;
-    static std::string help_message;
+    static bool show_help_flag;
 
     static void initialize() { rmz::enable_ansi(); }
 
-    static void print_options() {
-        rmz::println("* Commands: 'exit', 'order', 'random', 'pause', 'resume', '<int><s|m>, 'next', 'previous', 'set <path>', 'add <folder>'");
+    
+    static void show_help() {
+        show_help_flag = true;
     }
-    static void add_help_message(const std::string& message) {
-        help_message += message + '\n';
-    }
-    static void clear_help_message() {
-        help_message.clear();
+    static void clear_help() {
+        show_help_flag = false;
     }
 
     static void set_wallpaper_changed_message(const std::string& message) {
@@ -291,14 +327,15 @@ struct ConsoleManager {
             rmz::println(wallpaper_changed_message);
             rmz::println();
         }
+
         if (not error_message.empty()) {
             rmz::println(error_message);
-            // rmz::println();
         }
-        if (not help_message.empty()) {
-            rmz::println(help_message);
+
+        if (show_help_flag) {
+            print_help();
         } else {
-            print_options();
+            print_commands();
         }
             
     }
@@ -314,11 +351,22 @@ struct ConsoleManager {
         }   
         return split_string(raw_input, ' ');
     }
+    
+private:    
+    static void print_commands() {
+        rmz::println("* Commands: {}", join_string(CommandManager::get_commands_string(), ", "));
+    }
+    static void print_help() {
+        rmz::println("* Available commands:");
+        for (auto [command, description] : std::views::zip(CommandManager::get_commands_string(), CommandManager::get_commands_description())) {
+            rmz::println("  - '{}': {}", command, description);
+        }
+    }
 };
 std::atomic<bool> ConsoleManager::signaled(false);
 std::string ConsoleManager::wallpaper_changed_message;
 std::string ConsoleManager::error_message;
-std::string ConsoleManager::help_message;
+bool ConsoleManager::show_help_flag = false;
 
 
 struct Parameters {
@@ -338,7 +386,7 @@ struct Parameters {
         std::ofstream file(name, std::ios::trunc);
 
         write_line(file, std::format("{}s", duration_type(timer.get_duration()).count()));
-        write_line(file, std::format("add {}", join_string(WallpaperManager::folders, ' ')));
+        write_line(file, std::format("add {}", join_string(WallpaperManager::folders, " ")));
         write_line(file, std::format("{}", WallpaperChanger::change_order == WallpaperChanger::ORDER ? "order" : "random"));
         
         file.close();
@@ -406,28 +454,14 @@ bool action(const std::vector<std::string>& input) {
         ConsoleManager::signal_update();
 
     } else if (command == "help") {
-        ConsoleManager::clear_help_message();
-        ConsoleManager::add_help_message("* Available commands :");
-        ConsoleManager::add_help_message("  - 'order' : Set wallpaper change order to sequential.");
-        ConsoleManager::add_help_message("  - 'random' : Set wallpaper change order to random.");
-        ConsoleManager::add_help_message("  - '<int><s|m>' : Set the wallpaper change interval (e.g., '10s' for 10 seconds, '5m' for 5 minutes).");
-        ConsoleManager::add_help_message("  - 'pause' : Pause the automatic wallpaper changer.");
-        ConsoleManager::add_help_message("  - 'resume' : Resume the automatic wallpaper changer.");
-        ConsoleManager::add_help_message("  - 'next' : Manually set the next wallpaper in the current order.");
-        ConsoleManager::add_help_message("  - 'previous' : Manually set the previous wallpaper in the current order.");
-        ConsoleManager::add_help_message("  - 'set <path>' : Set the wallpaper to a specific image file.");
-        ConsoleManager::add_help_message("  - 'add <folder>' : Add a folder to the list of wallpaper folders and load its wallpapers.");
-        ConsoleManager::add_help_message("  - 'exit' : Exit the program.");
-        ConsoleManager::add_help_message("  - 'clear' : Clear the help and error messages.");
-        ConsoleManager::add_help_message("  - 'parameters' : Show the current parameters.");
-        ConsoleManager::add_help_message("  - 'help' : Show this help message.");
+        ConsoleManager::show_help();
         
     } else if (command == "parameters") {
         
-        
     } else if (command == "clear") {
-        ConsoleManager::clear_help_message();
+        ConsoleManager::clear_help();
         ConsoleManager::clear_error_message();
+
     } else {
         valid_command = false;
     }
@@ -489,6 +523,7 @@ void main_function() {
     WallpaperOrderGetter::initialize();
     WallpaperChanger::initialize();
     Parameters::initialize();
+    CommandManager::initialize();
 
     // Load parameters from file
     Parameters::load("settings.wallpaper");
