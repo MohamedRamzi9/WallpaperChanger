@@ -247,11 +247,18 @@ struct ConsoleManager {
     static std::atomic<bool> signaled;
     static std::string wallpaper_changed_message;
     static std::string error_message;
+    static std::string help_message;
 
     static void initialize() { rmz::enable_ansi(); }
 
     static void print_options() {
         rmz::println("* Commands: 'exit', 'order', 'random', 'pause', 'resume', '<int><s|m>, 'next', 'previous', 'set <path>', 'add <folder>'");
+    }
+    static void add_help_message(const std::string& message) {
+        help_message += message + '\n';
+    }
+    static void clear_help_message() {
+        help_message.clear();
     }
 
     static void set_wallpaper_changed_message(const std::string& message) {
@@ -261,11 +268,7 @@ struct ConsoleManager {
         error_message = message;
     }
     static void add_error_message(const std::string& message) {
-        if (error_message.empty()) {
-            error_message = message;
-        } else {
-            error_message += '\n' + message;
-        }
+        error_message += message + '\n'; 
     }
 
     static void signal_update() {
@@ -290,9 +293,14 @@ struct ConsoleManager {
         }
         if (not error_message.empty()) {
             rmz::println(error_message);
-            rmz::println();
+            // rmz::println();
         }
-        print_options();
+        if (not help_message.empty()) {
+            rmz::println(help_message);
+        } else {
+            print_options();
+        }
+            
     }
 
     static std::vector<std::string> get_input() {
@@ -310,6 +318,7 @@ struct ConsoleManager {
 std::atomic<bool> ConsoleManager::signaled(false);
 std::string ConsoleManager::wallpaper_changed_message;
 std::string ConsoleManager::error_message;
+std::string ConsoleManager::help_message;
 
 
 struct Parameters {
@@ -396,6 +405,29 @@ bool action(const std::vector<std::string>& input) {
         ConsoleManager::set_wallpaper_changed_message(std::format("* Wallpaper set to: '{}'", wallpaper));
         ConsoleManager::signal_update();
 
+    } else if (command == "help") {
+        ConsoleManager::clear_help_message();
+        ConsoleManager::add_help_message("* Available commands :");
+        ConsoleManager::add_help_message("  - 'order' : Set wallpaper change order to sequential.");
+        ConsoleManager::add_help_message("  - 'random' : Set wallpaper change order to random.");
+        ConsoleManager::add_help_message("  - '<int><s|m>' : Set the wallpaper change interval (e.g., '10s' for 10 seconds, '5m' for 5 minutes).");
+        ConsoleManager::add_help_message("  - 'pause' : Pause the automatic wallpaper changer.");
+        ConsoleManager::add_help_message("  - 'resume' : Resume the automatic wallpaper changer.");
+        ConsoleManager::add_help_message("  - 'next' : Manually set the next wallpaper in the current order.");
+        ConsoleManager::add_help_message("  - 'previous' : Manually set the previous wallpaper in the current order.");
+        ConsoleManager::add_help_message("  - 'set <path>' : Set the wallpaper to a specific image file.");
+        ConsoleManager::add_help_message("  - 'add <folder>' : Add a folder to the list of wallpaper folders and load its wallpapers.");
+        ConsoleManager::add_help_message("  - 'exit' : Exit the program.");
+        ConsoleManager::add_help_message("  - 'clear' : Clear the help and error messages.");
+        ConsoleManager::add_help_message("  - 'parameters' : Show the current parameters.");
+        ConsoleManager::add_help_message("  - 'help' : Show this help message.");
+        
+    } else if (command == "parameters") {
+        
+        
+    } else if (command == "clear") {
+        ConsoleManager::clear_help_message();
+        ConsoleManager::clear_error_message();
     } else {
         valid_command = false;
     }

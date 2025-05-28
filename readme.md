@@ -14,4 +14,5 @@ the values in `<>` are placeholders and should be replaced with the actual value
 - `pause` : pauses the wallpaper changing
 - `resume` : resumes the wallpaper changing
 - `exit` : exits the program and saves the current state
+- `clear` : clears the errors and help messages
 
