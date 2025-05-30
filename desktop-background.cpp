@@ -21,6 +21,61 @@
 // #include "rmz_file.hpp"
 
 
+
+
+// ======================================
+// ============ DECLARATIONS ============
+// ======================================
+
+bool action(const std::string& input);
+
+
+
+
+struct WallpaperChanger {
+    static enum change_order { ORDER, RANDOM } change_order;
+    using duration_type = rmz::seconds; static rmz::timer timer; 
+
+    static void initialize() {
+        change_order = ORDER;
+        timer.set_duration(duration_type(10)); 
+        timer.init(); 
+    }
+    static void set_change_order(enum change_order new_order) {
+        change_order = new_order;
+    }
+    static void set_wallpaper(const std::string& path) {
+        SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID)path.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+    }
+    static std::string set_next_wallpaper();
+    static std::string set_previous_wallpaper();
+
+    static bool is_change_order_random() {
+        return change_order == RANDOM;
+    }
+    static bool is_change_order_order() {
+        return change_order == ORDER;
+    }
+    static duration_type get_duration() {
+        return timer.get_duration();
+    }
+    static bool is_timer_done() {
+        return timer.is_done();
+    }
+    static void set_duration(duration_type duration) {
+        timer.set_duration(duration);
+        timer.init();
+    }
+    static void init_timer() {
+        timer.init();
+    }
+};
+enum WallpaperChanger::change_order WallpaperChanger::change_order;
+rmz::timer WallpaperChanger::timer; 
+
+
+
+
 // ===========================================
 // ============ UTILITY FUNCTIONS ============
 // ===========================================
@@ -44,7 +99,7 @@ std::string join_string(const std::vector<std::string>& vec, const std::string& 
     return result;
 }
 
-rmz::type::nullable<std::chrono::seconds> parse_duration(const std::string& input) {
+rmz::type::nullable<WallpaperChanger::duration_type> parse_duration(const std::string& input) {
     if (input.empty()) return {};
 
     // Check last character is 's' or 'm'
@@ -74,53 +129,13 @@ rmz::type::nullable<std::chrono::seconds> parse_duration(const std::string& inpu
 std::counting_semaphore<0> pause_semaphore(0);
 std::counting_semaphore<0> empty_semaphore(0);
 enum State { RUNNING, PAUSED, STOPPED }; std::atomic<State> state;
-using duration_type = rmz::seconds; rmz::timer timer(duration_type(10)); 
+
 
 
 
 // ======================================
-// ============ DECLARATIONS ============
+// ============ DEFINITIONS =============
 // ======================================
-
-bool action(const std::vector<std::string>& input);
-
-
-struct CommandManager {
-    static std::vector<std::string> commands_string;
-    static std::vector<std::string> commands_description;
-
-    static void initialize() {
-        commands_string = {
-            "<int><s|m>", "order", "random", "pause", "resume", "next", "previous", "set <path>", "add <path>", "exit", "help", "clear", "parameters",
-        };
-        commands_description = {
-            "Set the wallpaper change interval (e.g., '10s' for 10 seconds, '5m' for 5 minutes).",
-            "Set wallpaper change order to sequential.",
-            "Set wallpaper change order to random.",
-            "Pause the automatic wallpaper changer.",
-            "Resume the automatic wallpaper changer.",
-            "Manually set the next wallpaper in the current order.",
-            "Manually set the previous wallpaper in the current order.",
-            "Set the wallpaper to a specific image file.",
-            "Add a folder to the list of wallpaper folders and load its wallpapers.",
-            "Exit the program.",
-            "Show this help message.",
-            "Clear the help and error messages.",
-            "Show the current parameters.",
-        };
-    }
-    static std::vector<std::string>& get_commands_string() {
-        return commands_string;
-    }
-    static std::vector<std::string>& get_commands_description() {
-        return commands_description;
-    }
-};
-std::vector<std::string> CommandManager::commands_string;
-std::vector<std::string> CommandManager::commands_description;
-
-
-
 
 struct WallpaperManager {
     static std::vector<std::string> folders;
@@ -169,13 +184,17 @@ struct WallpaperManager {
     static int get_wallpaper_count() {
         return wallpapers.size();
     }
-
+    static std::vector<std::string>& get_folders() {
+        return folders;
+    }
     static std::string get_wallpaper(int index) {
         return wallpapers[index];
     }
 };
 std::vector<std::string> WallpaperManager::folders;
 std::vector<std::string> WallpaperManager::wallpapers;
+
+
 
 
 struct WallpaperRandomGetter {
@@ -217,6 +236,8 @@ std::vector<int> WallpaperRandomGetter::indices;
 std::mt19937 WallpaperRandomGetter::rng;
 
 
+
+
 struct WallpaperOrderGetter {
     static int current_index;
 
@@ -243,41 +264,136 @@ struct WallpaperOrderGetter {
 int WallpaperOrderGetter::current_index;
 
 
-struct WallpaperChanger {
-    static enum change_order { ORDER, RANDOM } change_order;
+
+
+struct CommandManager {
+    static std::vector<std::string> strings;
+    static std::vector<std::string> descriptions;
+
     static void initialize() {
-        change_order = ORDER; // Default order
+        strings = {
+            Duration::get_string(),
+            Order::get_string(),
+            Random::get_string(),
+            Pause::get_string(),
+            Resume::get_string(),
+            Next::get_string(),
+            Previous::get_string(),
+            Set::get_string(),
+            Add::get_string(),
+            Exit::get_string(),
+            Help::get_string(),
+            Clear::get_string(),
+            Parameters::get_string(),
+        };
+        descriptions = {
+            Duration::get_description(),
+            Order::get_description(),
+            Random::get_description(),
+            Pause::get_description(),
+            Resume::get_description(),
+            Next::get_description(),
+            Previous::get_description(),
+            Set::get_description(),
+            Add::get_description(),
+            Exit::get_description(),
+            Help::get_description(),
+            Clear::get_description(),
+            Parameters::get_description(),
+        };
     }
-
-    static void set_change_order(enum change_order new_order) {
-        change_order = new_order;
+    static std::vector<std::string> get_strings() {
+        return strings;
     }
-    static void set_wallpaper(const std::string& path) {
-        SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID)path.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+    static std::vector<std::string> get_descriptions() {
+        return descriptions;
     }
-    static std::string set_next_wallpaper() {
-        std::string wallpaper;
-        if (change_order == ORDER) {
-            wallpaper = WallpaperOrderGetter::get_next_wallpaper();
-        } else {
-            wallpaper = WallpaperRandomGetter::get_next_wallpaper();
+    
+    struct Duration {
+        static std::string get_string(const WallpaperChanger::duration_type& duration) { return std::format("{}s", duration.count()); }
+        static std::string get_string() { return "<int>s/m"; }
+        static std::string get_description() { return "Set the wallpaper change interval (e.g., '10s' for 10 seconds, '5m' for 5 minutes)."; }
+        static rmz::type::nullable<WallpaperChanger::duration_type> parse(const std::string& input) {
+            return parse_duration(input);
         }
-        set_wallpaper(wallpaper);
-        return wallpaper;
-    }
-    static std::string set_previous_wallpaper() {
-        std::string wallpaper;
-        if (change_order == ORDER) {
-            wallpaper = WallpaperOrderGetter::get_previous_wallpaper();
-        } else {
-            wallpaper = WallpaperRandomGetter::get_previous_wallpaper();
+    };
+    struct Add {
+        static std::string get_string(const std::vector<std::string>& folders) { return "add " + join_string(folders, " "); }
+        static std::string get_string() { return "add <folder>"; }
+        static std::string get_description() { return "Add a folder to the list of wallpaper folders and load its wallpapers."; }
+        static rmz::type::nullable<std::string> parse(const std::string& input) {
+            auto parts = split_string(input, ' ');
+            if (parts.size() < 2) return {};
+            if (parts[0] != "add") return {};
+            // parts.erase(parts.begin()); 
+            return parts[1];
         }
-        set_wallpaper(wallpaper);
-        return wallpaper;
-    }
-
+    };
+    struct Order {
+        static std::string get_string() { return "order"; }
+        static std::string get_description() { return "Set wallpaper change order to sequential."; }
+        static bool parse(const std::string& input) { return input == "order"; } 
+    };
+    struct Random {
+        static std::string get_string() { return "random"; }
+        static std::string get_description() { return "Set wallpaper change order to random."; }
+        static bool parse(const std::string& input) { return input == "random"; }
+    };
+    struct Pause {
+        static std::string get_string() { return "pause"; }
+        static std::string get_description() { return "Pause the automatic wallpaper changer."; }
+        static bool parse(const std::string& input) { return input == "pause"; }
+    };
+    struct Resume {
+        static std::string get_string() { return "resume"; }
+        static std::string get_description() { return "Resume the automatic wallpaper changer."; }
+        static bool parse(const std::string& input) { return input == "resume"; }
+    };
+    struct Next {
+        static std::string get_string() { return "next"; }
+        static std::string get_description() { return "Set the next wallpaper in the current order."; }
+        static bool parse(const std::string& input) { return input == "next"; }
+    };
+    struct Previous {
+        static std::string get_string() { return "previous"; }
+        static std::string get_description() { return "Set the previous wallpaper in the current order."; }
+        static bool parse(const std::string& input) { return input == "previous"; }
+    };
+    struct Set {
+        static std::string get_string() { return "set <path>"; }
+        static std::string get_description() { return "Set the wallpaper to a specific image file."; }
+        static rmz::type::nullable<std::string> parse(const std::string& input) {
+            auto parts = split_string(input, ' ');
+            if (parts.size() != 2) return {};
+            if (parts[0] != "set") return {};
+            return parts[1];
+        }
+    };
+    struct Help {
+        static std::string get_string() { return "help"; }
+        static std::string get_description() { return "Show this help message."; }
+        static bool parse(const std::string& input) { return input == "help"; }
+    };
+    struct Clear {
+        static std::string get_string() { return "clear"; }
+        static std::string get_description() { return "Clear the help and error messages."; }
+        static bool parse(const std::string& input) { return input == "clear"; }
+    };
+    struct Parameters {
+        static std::string get_string() { return "parameters"; }
+        static std::string get_description() { return "Show the current parameters."; }
+        static bool parse(const std::string& input) { return input == "parameters"; }
+    };
+    struct Exit {
+        static std::string get_string() { return "exit"; }
+        static std::string get_description() { return "Exit the program and stop the automatic wallpaper changer."; }
+        static bool parse(const std::string& input) { return input == "exit"; }
+    };
 };
-enum WallpaperChanger::change_order WallpaperChanger::change_order;
+std::vector<std::string> CommandManager::strings;
+std::vector<std::string> CommandManager::descriptions;
+
+
 
 
 struct ConsoleManager {
@@ -286,6 +402,7 @@ struct ConsoleManager {
     static std::string wallpaper_changed_message;
     static std::string error_message;
     static bool show_help_flag;
+    static bool show_parameters_flag;
 
     static void initialize() { rmz::enable_ansi(); }
 
@@ -295,6 +412,13 @@ struct ConsoleManager {
     }
     static void clear_help() {
         show_help_flag = false;
+    }
+
+    static void show_parameters() {
+        show_parameters_flag = true;
+    }
+    static void clear_parameters() {
+        show_parameters_flag = false;
     }
 
     static void set_wallpaper_changed_message(const std::string& message) {
@@ -311,15 +435,9 @@ struct ConsoleManager {
         signaled.store(true);
         rmz::insert_enter();
     }
-    static void clear_signal() {
-        signaled.store(false);
-    }
-    static void clear_error_message() {
-        error_message.clear();
-    }
-    static bool is_signaled() {
-        return signaled.load();
-    }
+    static void clear_signal() { signaled.store(false); }
+    static void clear_error_message() { error_message.clear(); }
+    static bool is_signaled() { return signaled.load(); }
     
     static void update() {
         rmz::clear_console();
@@ -330,17 +448,25 @@ struct ConsoleManager {
 
         if (not error_message.empty()) {
             rmz::println(error_message);
+            rmz::println();
+        }
+
+        if (show_parameters_flag) {
+            print_parameters();
+            rmz::println();
         }
 
         if (show_help_flag) {
             print_help();
+            rmz::println();
         } else {
             print_commands();
+            rmz::println();
         }
             
     }
 
-    static std::vector<std::string> get_input() {
+    static std::string get_input() {
         std::string raw_input;
         std::getline(std::cin, raw_input);
         while (ConsoleManager::is_signaled()) {
@@ -348,25 +474,35 @@ struct ConsoleManager {
             ConsoleManager::update();
             rmz::insert_input(raw_input);
             std::getline(std::cin, raw_input);
-        }   
-        return split_string(raw_input, ' ');
+        }
+        return raw_input;
     }
     
 private:    
     static void print_commands() {
-        rmz::println("* Commands: {}", join_string(CommandManager::get_commands_string(), ", "));
+        rmz::println("* Commands: {}", join_string(CommandManager::get_strings(), ", "));
     }
     static void print_help() {
         rmz::println("* Available commands:");
-        for (auto [command, description] : std::views::zip(CommandManager::get_commands_string(), CommandManager::get_commands_description())) {
+        for (auto [command, description] : std::views::zip(CommandManager::get_strings(), CommandManager::get_descriptions())) {
             rmz::println("  - '{}': {}", command, description);
         }
+    }
+    static void print_parameters() {
+        rmz::println("* Current parameters:");
+        rmz::println("  - Duration: {}s", WallpaperChanger::get_duration().count());
+        rmz::println("  - Change order: {}", WallpaperChanger::is_change_order_order() ? "Order" : "Random");
+        rmz::println("  - Automatic wallpaper changer state: {}", state.load() == RUNNING ? "Running" : (state.load() == PAUSED ? "Paused" : "Stopped"));
+        rmz::println("  - Folders: {}", join_string(WallpaperManager::get_folders(), ", "));
     }
 };
 std::atomic<bool> ConsoleManager::signaled(false);
 std::string ConsoleManager::wallpaper_changed_message;
 std::string ConsoleManager::error_message;
 bool ConsoleManager::show_help_flag = false;
+bool ConsoleManager::show_parameters_flag = false;
+
+
 
 
 struct Parameters {
@@ -377,7 +513,7 @@ struct Parameters {
         auto parameters = read(name);
         for (auto& parameter : parameters) {
             if (not action(parameter)) {
-                ConsoleManager::add_error_message(std::format("* Command '{}' not recognized in file '{}'", parameter[0], name));
+                ConsoleManager::add_error_message(std::format("* Command '{}' not recognized in file '{}'", parameter, name));
             }
         }
     }
@@ -385,25 +521,26 @@ struct Parameters {
     static void save(const std::string& name) {
         std::ofstream file(name, std::ios::trunc);
 
-        write_line(file, std::format("{}s", duration_type(timer.get_duration()).count()));
-        write_line(file, std::format("add {}", join_string(WallpaperManager::folders, " ")));
-        write_line(file, std::format("{}", WallpaperChanger::change_order == WallpaperChanger::ORDER ? "order" : "random"));
-        
+        write_line(file, CommandManager::Duration::get_string(WallpaperChanger::get_duration()));
+        write_line(file, CommandManager::Add::get_string(WallpaperManager::get_folders()));
+        write_line(file, WallpaperChanger::is_change_order_order() ? CommandManager::Order::get_string() : CommandManager::Random::get_string());
+
         file.close();
     }
+
+
 
 private:
     static void write_line(std::ofstream& file, const std::string& line) {
         file << line << '\n';
     }
-    static std::vector<std::vector<std::string>> read(const std::string& name) {
-        std::vector<std::vector<std::string>> result;
+    static std::vector<std::string> read(const std::string& name) {
+        std::vector<std::string> result;
         std::ifstream file(name);
 
         std::string line;
         while (std::getline(file, line)) {
-            std::vector<std::string> tokens = split_string(line, ' ');
-            result.push_back(tokens);
+            result.push_back(line);
         }
         return result;
     }
@@ -412,55 +549,52 @@ private:
 
 
 
-bool action(const std::vector<std::string>& input) {
+
+bool action(const std::string& input) {
     bool valid_command = true;
-    std::string command = input[0];
     
-    if (command == "order") {
+    if (CommandManager::Order::parse(input)) {
         WallpaperChanger::set_change_order(WallpaperChanger::ORDER);
-        
-    } else if (command == "random") {
+
+    } else if (CommandManager::Random::parse(input)) {
         WallpaperChanger::set_change_order(WallpaperChanger::RANDOM);
         
-    } else if (auto result = parse_duration(command)) {
-        timer.set_duration(result.get());
-        timer.init();
+    } else if (auto result = CommandManager::Duration::parse(input)) {
+        WallpaperChanger::set_duration(result.get());
 
-    } else if (command == "pause") {
+    } else if (CommandManager::Pause::parse(input)) {
         state.store(PAUSED);
 
-    } else if (command == "add") {
-        std::string folder = input[1];
-        WallpaperManager::add_folder(folder);
+    } else if (auto result = CommandManager::Add::parse(input)) {
+        WallpaperManager::add_folder(result.get());
         WallpaperRandomGetter::refresh();
         WallpaperOrderGetter::refresh();
         empty_semaphore.release();
 
-    } else if (command == "resume") {
+    } else if (CommandManager::Resume::parse(input)) {
         state.store(RUNNING);
         pause_semaphore.release();
 
-        
-    } else if (command == "next") {
+    } else if (CommandManager::Next::parse(input)) {
         WallpaperChanger::set_next_wallpaper();
-        
-    } else if (command == "previous") {
+
+    } else if (CommandManager::Previous::parse(input)) {
         WallpaperChanger::set_previous_wallpaper();
-        
-    } else if (command == "set") {
-        auto wallpaper = input[1];
-        WallpaperChanger::set_wallpaper(wallpaper);
-        ConsoleManager::set_wallpaper_changed_message(std::format("* Wallpaper set to: '{}'", wallpaper));
+
+    } else if (auto result = CommandManager::Set::parse(input)) {
+        WallpaperChanger::set_wallpaper(result.get());
+        ConsoleManager::set_wallpaper_changed_message(std::format("* Wallpaper set to: '{}'", result.get()));
         ConsoleManager::signal_update();
 
-    } else if (command == "help") {
+    } else if (CommandManager::Help::parse(input)) {
         ConsoleManager::show_help();
-        
-    } else if (command == "parameters") {
-        
-    } else if (command == "clear") {
-        ConsoleManager::clear_help();
+
+    } else if (CommandManager::Parameters::parse(input)) {
+        ConsoleManager::show_parameters();
+
+    } else if (CommandManager::Clear::parse(input)) {
         ConsoleManager::clear_error_message();
+        ConsoleManager::clear_parameters();
 
     } else {
         valid_command = false;
@@ -472,6 +606,32 @@ bool action(const std::vector<std::string>& input) {
     
     return valid_command;
 }
+
+
+
+
+
+std::string WallpaperChanger::set_next_wallpaper() {
+    std::string wallpaper;
+    if (change_order == ORDER) {
+        wallpaper = WallpaperOrderGetter::get_next_wallpaper();
+    } else {
+        wallpaper = WallpaperRandomGetter::get_next_wallpaper();
+    }
+    set_wallpaper(wallpaper);
+    return wallpaper;
+}
+std::string WallpaperChanger::set_previous_wallpaper() {
+    std::string wallpaper;
+    if (change_order == ORDER) {
+        wallpaper = WallpaperOrderGetter::get_previous_wallpaper();
+    } else {
+        wallpaper = WallpaperRandomGetter::get_previous_wallpaper();
+    }
+    set_wallpaper(wallpaper);
+    return wallpaper;
+}
+
 
 
 
@@ -493,11 +653,11 @@ void service_wallpaper_changer() {
         if (WallpaperManager::empty()) {
             empty_semaphore.acquire();
             continue;
-        } else if (not timer.is_done()) {
+        } else if (not WallpaperChanger::is_timer_done()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
-        timer.init();
+        WallpaperChanger::init_timer();
         std::string wallpaper = WallpaperChanger::set_next_wallpaper();
 
         ConsoleManager::set_wallpaper_changed_message(std::format("* New wallpaper : '{}'", wallpaper));
@@ -533,14 +693,13 @@ void main_function() {
 
     while (true) {
         ConsoleManager::update();
-        std::vector<std::string> input = ConsoleManager::get_input();
+        auto input = ConsoleManager::get_input();
 
         if (input.empty()) {
             continue;
         }
-        
-        std::string command = input[0];
-        if (command == "exit") {
+
+        if (CommandManager::Exit::parse(input)) {
             state.store(STOPPED);
             pause_semaphore.release(); 
             empty_semaphore.release(); 
@@ -548,7 +707,7 @@ void main_function() {
 
         } else {
             if (not action(input)) {
-                ConsoleManager::set_error_message(std::format("* Command '{}' not recognized", command));
+                ConsoleManager::set_error_message(std::format("* Command '{}' not recognized", input));
             }
         }
 
