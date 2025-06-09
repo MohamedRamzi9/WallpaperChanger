@@ -11,13 +11,21 @@
 using rmz::type::nullable;
 
 namespace CommandManager {
-// public:
-    extern std::vector<std::string> strings;
-    extern std::vector<std::string> descriptions;
+
+
+    enum command_enum { DURATION, ORDER, RANDOM, PAUSE, RESUME, NEXT, PREVIOUS, SET, ADD, EXIT, HELP, CLEAR, PARAMETERS, SAVEFILE, SAVE, AUTOSAVE };
+    struct command_type {
+        command_enum type;
+        std::string string;
+        std::string description;
+    };
+    using command_vector_type = std::vector<command_type>;
     
     void initialize();
-    std::vector<std::string> get_strings();
-    std::vector<std::string> get_descriptions();
+
+    command_vector_type& get_commands();
+    int get_command_count();
+    command_type& get_command(int index);
 
     namespace Duration {
         std::string get_string(const WallpaperChanger::duration_type& duration);

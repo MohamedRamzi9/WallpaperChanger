@@ -2,71 +2,60 @@
 #include "Utility.hpp"
 
 namespace CommandManager {
-    std::vector<std::string> strings;
-    std::vector<std::string> descriptions;
+
+    command_vector_type commands;
 
     void initialize() {
-        strings = {
-            Duration::get_string(),
-            Order::get_string(),
-            Random::get_string(),
-            Pause::get_string(),
-            Resume::get_string(),
-            Next::get_string(),
-            Previous::get_string(),
-            Set::get_string(),
-            Add::get_string(),
-            Exit::get_string(),
-            Help::get_string(),
-            Clear::get_string(),
-            Parameters::get_string(),
-            // SaveFile::get_string(),
-            Save::get_string(),
-            AutoSave::get_string(),
+        commands = {
+            { DURATION, Duration::get_string(), Duration::get_description() },
+            { ORDER, Order::get_string(), Order::get_description() },
+            { RANDOM, Random::get_string(), Random::get_description() },
+            { PAUSE, Pause::get_string(), Pause::get_description() },
+            { RESUME, Resume::get_string(), Resume::get_description() },
+            { NEXT, Next::get_string(), Next::get_description() },
+            { PREVIOUS, Previous::get_string(), Previous::get_description() },
+            { SET, Set::get_string(), Set::get_description() },
+            { ADD, Add::get_string(), Add::get_description() },
+            { EXIT, Exit::get_string(), Exit::get_description() },
+            { HELP, Help::get_string(), Help::get_description() },
+            { CLEAR, Clear::get_string(), Clear::get_description() },
+            { PARAMETERS, Parameters::get_string(), Parameters::get_description() },
+            // { SAVEFILE, SaveFile::get_string(), SaveFile::get_description() },
+            { SAVE, Save::get_string(), Save::get_description() },
+            { AUTOSAVE, AutoSave::get_string(), AutoSave::get_description() }
         };
-        descriptions = {
-            Duration::get_description(),
-            Order::get_description(),
-            Random::get_description(),
-            Pause::get_description(),
-            Resume::get_description(),
-            Next::get_description(),
-            Previous::get_description(),
-            Set::get_description(),
-            Add::get_description(),
-            Exit::get_description(),
-            Help::get_description(),
-            Clear::get_description(),
-            Parameters::get_description(),
-            // SaveFile::get_description(),
-            Save::get_description(),
-            AutoSave::get_description(),
-        };
+          
     }
 
-
-    std::vector<std::string> get_strings() { return strings; }
-    std::vector<std::string> get_descriptions() { return descriptions; }
+    command_vector_type& get_commands() {
+        return commands;
+    }
+    int get_command_count() {
+        return commands.size();
+    }
+    command_type& get_command(int index) {
+        return commands[index];
+    }
 
     namespace Duration {       
         std::string get_string(const WallpaperChanger::duration_type& duration) { return std::format("{}s", duration.count()); }
         std::string get_string() { return "<int>s/m"; }
         std::string get_description() { return "Set the wallpaper change interval (e.g., '10s' for 10 seconds, '5m' for 5 minutes)."; }
         nullable<WallpaperChanger::duration_type> parse(const std::string& input) {
-        if (input.empty()) return {};
+            if (input.empty()) return {};
 
-        char last = input.back();
-        if (last != 's' && last != 'm') return {};
+            char last = input.back();
+            if (last != 's' && last != 'm') return {};
 
-        std::string numberPart = input.substr(0, input.size() - 1);
+            std::string numberPart = input.substr(0, input.size() - 1);
 
-        if (numberPart.empty() || !std::all_of(numberPart.begin(), numberPart.end(), ::isdigit))
-            return {};
+            if (numberPart.empty() || !std::all_of(numberPart.begin(), numberPart.end(), ::isdigit))
+                return {};
 
-        int value = std::stoi(numberPart);
-        char unit = last;
-        return {unit == 's' ? WallpaperChanger::duration_type(rmz::seconds(value)) : WallpaperChanger::duration_type(rmz::minutes(value))};
-    }
+            int value = std::stoi(numberPart);
+            char unit = last;
+            return {unit == 's' ? WallpaperChanger::duration_type(rmz::seconds(value)) : WallpaperChanger::duration_type(rmz::minutes(value))};
+        }
     }
 
     namespace Add {

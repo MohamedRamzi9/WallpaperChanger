@@ -11,7 +11,10 @@
 #include "Other.hpp"
 
 #include <filesystem>
+#include <conio.h>
+#include <ranges>
 
+#include "rmz_console.hpp"
 #include "rmz_print.hpp"
 
 std::counting_semaphore<0> pause_semaphore(0);
@@ -101,7 +104,6 @@ bool action(const std::string& input) {
 
 
 
-
 // =================================================
 // ========== WALLPAPER CHANGER SERVICE ============
 // =================================================
@@ -134,6 +136,79 @@ void service_wallpaper_changer() {
 
 
 
+
+
+
+
+
+
+enum input_enum { UP, DOWN, LEFT, RIGHT, CHARCTER, ENTER };
+using input_type = std::pair<input_enum,char>;
+rmz::type::nullable<input_type> get_input() {
+    if (_kbhit()) {
+        char c = getch();
+        if (c == 13) return {{ENTER, c}};
+        if (c == 0 or c == 224) {
+            c = getch(); // Handle special keys
+            if (c == 72) return {{UP, c}};    // Up arrow key
+            if (c == 80) return {{DOWN, c}};  // Down arrow key
+            if (c == 75) return {{LEFT, c}};  // Left arrow key
+            if (c == 77) return {{RIGHT, c}}; // Right arrow key
+        }
+       return {{CHARCTER, c}};
+    }
+    return {};
+}
+
+
+namespace App {
+    enum menu_type { MAIN_MENU, } menu;
+    void initialize() { menu = MAIN_MENU; }
+    namespace MainMenu {
+        int choice;
+        void initialize() { choice = 0; }
+        void update(input_type input) {
+            auto [type, c] = input;
+            if (type == UP and choice > 0) choice--;
+            else if (type == DOWN and choice < CommandManager::get_command_count() - 1) choice++;
+            else if (type == ENTER) {
+                auto& command = CommandManager::get_command(choice);
+                
+            }
+        }
+        void render() {
+            for (auto [i, command] : std::ranges::views::enumerate(CommandManager::get_commands())) {
+                if (choice == i) rmz::print("-> ");
+                rmz::println(command.string);
+            }
+        }
+    }
+
+    void render() {
+        rmz::clear_console();
+        if (menu == MAIN_MENU) MainMenu::render();
+    }
+    void update(auto input) {
+        auto [type, c] = input;
+        if (type == LEFT) WallpaperChanger::set_next_wallpaper();
+        else if (type == RIGHT) WallpaperChanger::set_previous_wallpaper();
+        else if (menu == MAIN_MENU) MainMenu::update(input);
+    }
+    void run() {
+        rmz::enable_ansi();
+
+        render();
+        while (true) {
+            if (auto input = get_input()) {
+                update(input.get());
+                render();
+            }
+        }
+    }
+}
+
+
+
 // ========================================
 // ============ MAIN FUNCTION =============
 // ========================================
@@ -141,93 +216,35 @@ void service_wallpaper_changer() {
 void main_function() {
 
     // Path to the image file
-    ConsoleManager::initialize();
+    // ConsoleManager::initialize();
     WallpaperManager::initialize(); 
     WallpaperRandomGetter::initialize();
     WallpaperOrderGetter::initialize();
     WallpaperChanger::initialize();
     Parameters::initialize();
     CommandManager::initialize();
+    App::initialize();
 
     // Load parameters from file
     if (std::filesystem::exists(save_file))
         Parameters::load(save_file);
 
-    std::thread wallpaper_thread(service_wallpaper_changer);
+    // std::thread wallpaper_thread(service_wallpaper_changer);
 
-
-    while (true) {
-        ConsoleManager::update();
-        auto input = ConsoleManager::get_input();
-
-        if (input.empty())
-            continue;
-        trim(input);
-
-        if (CommandManager::Exit::parse(input)) {
-            state.store(STOPPED);
-            pause_semaphore.release(); 
-            empty_semaphore.release(); 
-            break;
-
-        } else {
-            if (not action(input)) {
-                ConsoleManager::set_error_message(std::format("* Command '{}' not recognized", input));
-            }
-        }
-            
-    }
+    App::run();
 
     if (auto_save)
         Parameters::save("settings.wallpaper");
 
-    wallpaper_thread.join();
+    // wallpaper_thread.join();
 }
-
-#include <conio.h>
-#include <ranges>
-#include "rmz_console.hpp"
 
 void test_function() {
-    int index = 0;
-    std::vector<std::string> options {
-        "Option 1",
-        "Option 2",
-        "Option 3",
-        "Option 4"
-    };
-    auto print_options = [&] {
-        for (auto&& [i, option] : std::ranges::views::enumerate(options)) {
-            if (index == i) 
-                rmz::print("-> ");
-            rmz::println(option);
-        }
-    };
-    rmz::enable_ansi();
-    print_options();
-    while (true) {    
-        if (_kbhit()) { // Check if a key has been pressed
-            char ch = _getch(); // Read character without waiting for Enter
-            if (ch == 0 || ch == 224) { 
-                char ch = _getch(); // Read the actual key code
-                if (ch == 72) { // Up arrow key
-                    index = (index - 1 + options.size()) % options.size();
-                } else if (ch == 80) { // Down arrow key
-                    index = (index + 1) % options.size();
-                }
-                rmz::clear_console(); 
-                print_options();
-            } else if (ch == 13) { // Enter key
-                rmz::println("You selected: " + options[index]);
-            }
-        }
-    }
 }
-
 
 int main() {
 
-    // main_function();
-    test_function();
+    main_function();
+    // test_function();
     return 0;
 }

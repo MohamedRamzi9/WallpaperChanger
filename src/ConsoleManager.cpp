@@ -79,13 +79,17 @@ namespace ConsoleManager {
     }
 
     void print_commands() {
-        rmz::println("* Commands: {}", join_string(CommandManager::get_strings(), ", "));
+        std::vector<std::string> strings;
+        for (const auto& command : CommandManager::get_commands())
+            strings.push_back(command.string);
+
+        rmz::println("* Commands: {}", join_string(strings, ", "));
     }
 
     void print_help() {
         rmz::println("* Available commands:");
-        for (auto [command, description] : std::views::zip(CommandManager::get_strings(), CommandManager::get_descriptions())) {
-            rmz::println("  - '{}': {}", command, description);
+        for (const auto& command : CommandManager::get_commands()) {
+            rmz::println("  - '{}': {}", command.string, command.description);
         }
     }
 
