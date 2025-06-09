@@ -5,30 +5,31 @@
 #include <string>
 
 
-struct ConsoleManager {
-    static std::atomic<bool> signaled;
-    static std::string wallpaper_changed_message;
-    static std::string error_message;
-    static bool show_help_flag;
-    static bool show_parameters_flag;
+namespace ConsoleManager {
+    extern std::atomic<bool> signaled;
+    extern std::string wallpaper_changed_message;
+    extern std::string error_message;
+    extern bool show_help_flag;
+    extern bool show_parameters_flag;
+    extern int cursor_column;
 
-    static void initialize();
-    static void show_help();
-    static void clear_help();
-    static void show_parameters();
-    static void clear_parameters();
-    static void set_wallpaper_changed_message(const std::string& message);
-    static void set_error_message(const std::string& message);
-    static void add_error_message(const std::string& message);
-    static void signal_update();
-    static void clear_signal();
-    static void clear_error_message();
-    static bool is_signaled();
-    static void update();
-    static std::string get_input();
+    void initialize();
+    void show_help();
+    void clear_help();
+    void show_parameters();
+    void clear_parameters();
+    void set_wallpaper_changed_message(const std::string& message);
+    void set_error_message(const std::string& message);
+    void add_error_message(const std::string& message);
+    void signal_update();
+    void clear_signal();
+    void clear_error_message();
+    bool is_signaled();
+    void update();
+    std::string get_input();
 
-private:
-    static void print_commands();
-    static void print_help();
-    static void print_parameters();
+// private:
+    void print_commands();
+    void print_help();
+    void print_parameters();
 };

@@ -4,24 +4,24 @@
 #include <vector>
 #include <random>
 
-struct WallpaperRandomGetter {
-    static int current_index;
-    static std::vector<int> indices;
-    static std::mt19937 rng;
+namespace WallpaperRandomGetter {
+    extern int current_index;
+    extern std::vector<int> indices;
+    extern std::mt19937 rng;
 
-    static void initialize();
-    static void refresh();
-    static void reset();
-    static std::string get_next_wallpaper();
-    static std::string get_previous_wallpaper();
+    void initialize();
+    void refresh();
+    void reset();
+    std::string get_next_wallpaper();
+    std::string get_previous_wallpaper();
 };
 
-struct WallpaperOrderGetter {
-    static int current_index;
+namespace WallpaperOrderGetter {
+    extern int current_index;
 
-    static void initialize();
-    static void refresh();
-    static void reset();
-    static std::string get_next_wallpaper();
-    static std::string get_previous_wallpaper();
+    void initialize();
+    void refresh();
+    void reset();
+    std::string get_next_wallpaper();
+    std::string get_previous_wallpaper();
 };

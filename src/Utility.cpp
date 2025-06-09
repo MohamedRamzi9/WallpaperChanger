@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <ranges>
-
+#include <cctype>
 
 std::vector<std::string> split_string(const std::string& str, char delimiter) {
     std::vector<std::string> result;
@@ -22,4 +22,17 @@ std::string join_string(const std::vector<std::string>& vec, const std::string& 
         result += delimiter + vec[i];
     }
     return result;
+}
+
+void left_trim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+        [](unsigned char ch) { return !std::isspace(ch); }));
+}
+void right_trim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+        [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+}
+void trim(std::string &s) {
+    left_trim(s);
+    right_trim(s);
 }

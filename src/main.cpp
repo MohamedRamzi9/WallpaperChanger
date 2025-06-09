@@ -7,6 +7,7 @@
 #include "WallpaperGetter.hpp"
 #include "CommandManager.hpp"
 #include "Parameter.hpp"
+#include "Utility.hpp"
 #include "Other.hpp"
 
 #include <filesystem>
@@ -71,8 +72,8 @@ bool action(const std::string& input) {
     } else if (auto result = CommandManager::AutoSave::parse(input)) {
         auto_save = result.get();
     
-    // } else if (auto result = CommandManager::Load::parse(input)) {
-    //     Parameters::load(result.get());
+    } else if (auto result = CommandManager::Load::parse(input)) {
+        Parameters::load(result.get());
 
     } else if (auto result = CommandManager::Clear::parse(input)) {
         auto parameter = result.get();
@@ -159,9 +160,9 @@ void main_function() {
         ConsoleManager::update();
         auto input = ConsoleManager::get_input();
 
-        if (input.empty()) {
+        if (input.empty())
             continue;
-        }
+        trim(input);
 
         if (CommandManager::Exit::parse(input)) {
             state.store(STOPPED);
@@ -183,13 +184,50 @@ void main_function() {
     wallpaper_thread.join();
 }
 
+#include <conio.h>
+#include <ranges>
+#include "rmz_console.hpp"
 
 void test_function() {
+    int index = 0;
+    std::vector<std::string> options {
+        "Option 1",
+        "Option 2",
+        "Option 3",
+        "Option 4"
+    };
+    auto print_options = [&] {
+        for (auto&& [i, option] : std::ranges::views::enumerate(options)) {
+            if (index == i) 
+                rmz::print("-> ");
+            rmz::println(option);
+        }
+    };
+    rmz::enable_ansi();
+    print_options();
+    while (true) {    
+        if (_kbhit()) { // Check if a key has been pressed
+            char ch = _getch(); // Read character without waiting for Enter
+            if (ch == 0 || ch == 224) { 
+                char ch = _getch(); // Read the actual key code
+                if (ch == 72) { // Up arrow key
+                    index = (index - 1 + options.size()) % options.size();
+                } else if (ch == 80) { // Down arrow key
+                    index = (index + 1) % options.size();
+                }
+                rmz::clear_console(); 
+                print_options();
+            } else if (ch == 13) { // Enter key
+                rmz::println("You selected: " + options[index]);
+            }
+        }
+    }
 }
+
 
 int main() {
 
-    main_function();
-    // test_function();
+    // main_function();
+    test_function();
     return 0;
 }

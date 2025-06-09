@@ -10,125 +10,127 @@
 
 using rmz::type::nullable;
 
-class CommandManager {
-public:
-    static void initialize();
-    static std::vector<std::string> get_strings();
-    static std::vector<std::string> get_descriptions();
+namespace CommandManager {
+// public:
+    extern std::vector<std::string> strings;
+    extern std::vector<std::string> descriptions;
+    
+    void initialize();
+    std::vector<std::string> get_strings();
+    std::vector<std::string> get_descriptions();
 
-    struct Duration {
-        static std::string get_string(const WallpaperChanger::duration_type& duration);
-        static std::string get_string();
-        static std::string get_description();
-        static nullable<WallpaperChanger::duration_type> parse(const std::string& input);
+    namespace Duration {
+        std::string get_string(const WallpaperChanger::duration_type& duration);
+        std::string get_string();
+        std::string get_description();
+        nullable<WallpaperChanger::duration_type> parse(const std::string& input);
     };
 
-    struct Add {
-        static std::string get_string(const std::vector<std::string>& folders);
-        static std::string get_string();
-        static std::string get_description();
-        static nullable<std::string> parse(const std::string& input);
+    namespace Add {
+        std::string get_string(const std::vector<std::string>& folders);
+        std::string get_string();
+        std::string get_description();
+        nullable<std::string> parse(const std::string& input);
     };
 
-    struct Order {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Order {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Random {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Random {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Pause {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Pause {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Resume {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Resume {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Next {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Next {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Previous {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Previous {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Set {
-        static std::string get_string();
-        static std::string get_description();
-        static nullable<std::string> parse(const std::string& input);
+    namespace Set {
+        std::string get_string();
+        std::string get_description();
+        nullable<std::string> parse(const std::string& input);
     };
 
-    struct Help {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Help {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct Clear {
+    namespace Clear {
         enum type { HELP, PARAMETERS, ERROR, ALL };
-        static std::string get_string();
-        static std::string get_description();
-        static nullable<type> parse(const std::string& input);
+        std::string get_string();
+        std::string get_description();
+        nullable<type> parse(const std::string& input);
 
-        static bool is_clear_help(type clear_type);
-        static bool is_clear_parameters(type clear_type);
-        static bool is_clear_error(type clear_type);
-        static bool is_clear_all(type clear_type);
+        bool is_clear_help(type clear_type);
+        bool is_clear_parameters(type clear_type);
+        bool is_clear_error(type clear_type);
+        bool is_clear_all(type clear_type);
     };
 
-    struct Parameters {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Parameters {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-    struct SaveFile {
-        static std::string get_string();
-        static std::string get_string(const std::string& path);
-        static std::string get_description();
-        static nullable<std::string> parse(const std::string& input);
+    namespace SaveFile {
+        std::string get_string();
+        std::string get_string(const std::string& path);
+        std::string get_description();
+        nullable<std::string> parse(const std::string& input);
     };
 
-    struct Save {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Save {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
     
-    struct AutoSave {
-        static std::string get_string();
-        static std::string get_string(bool on);
-        static std::string get_description();
-        static nullable<bool> parse(const std::string& input);
+    namespace AutoSave {
+        std::string get_string();
+        std::string get_string(bool on);
+        std::string get_description();
+        nullable<bool> parse(const std::string& input);
     };
 
-    struct Load {
-        static std::string get_string();
-        static std::string get_description();
-        static nullable<std::string> parse(const std::string& input);
+    namespace Load {
+        std::string get_string();
+        std::string get_description();
+        nullable<std::string> parse(const std::string& input);
     };
 
-    struct Exit {
-        static std::string get_string();
-        static std::string get_description();
-        static bool parse(const std::string& input);
+    namespace Exit {
+        std::string get_string();
+        std::string get_description();
+        bool parse(const std::string& input);
     };
 
-private:
-    static std::vector<std::string> strings;
-    static std::vector<std::string> descriptions;
+// private:
+
 };

@@ -11,84 +11,91 @@
 #include "rmz_console.hpp"
 #include "rmz_print.hpp"
 
+namespace ConsoleManager {
+    std::atomic<bool> signaled(false);
+    std::string wallpaper_changed_message;
+    std::string error_message;
+    bool show_help_flag = false;
+    bool show_parameters_flag = false;
+    int cursor_column = 0;
 
-std::atomic<bool> ConsoleManager::signaled(false);
-std::string ConsoleManager::wallpaper_changed_message;
-std::string ConsoleManager::error_message;
-bool ConsoleManager::show_help_flag = false;
-bool ConsoleManager::show_parameters_flag = false;
+    void initialize() { rmz::enable_ansi(); }
 
-void ConsoleManager::initialize() { rmz::enable_ansi(); }
+    void show_help() { show_help_flag = true; }
+    void clear_help() { show_help_flag = false; }
+    void show_parameters() { show_parameters_flag = true; }
+    void clear_parameters() { show_parameters_flag = false; }
 
-void ConsoleManager::show_help() { show_help_flag = true; }
-void ConsoleManager::clear_help() { show_help_flag = false; }
-void ConsoleManager::show_parameters() { show_parameters_flag = true; }
-void ConsoleManager::clear_parameters() { show_parameters_flag = false; }
+    void set_wallpaper_changed_message(const std::string& message) { wallpaper_changed_message = message; }
+    void set_error_message(const std::string& message) { error_message = message; }
+    void add_error_message(const std::string& message) { error_message += message + '\n'; }
 
-void ConsoleManager::set_wallpaper_changed_message(const std::string& message) { wallpaper_changed_message = message; }
-void ConsoleManager::set_error_message(const std::string& message) { error_message = message; }
-void ConsoleManager::add_error_message(const std::string& message) { error_message += message + '\n'; }
-
-void ConsoleManager::signal_update() {
-    signaled.store(true);
-    rmz::insert_enter();
-}
-void ConsoleManager::clear_signal() { signaled.store(false); }
-void ConsoleManager::clear_error_message() { error_message.clear(); }
-bool ConsoleManager::is_signaled() { return signaled.load(); }
-
-void ConsoleManager::update() {
-    rmz::clear_console();
-    if (!wallpaper_changed_message.empty()) {
-        rmz::println(wallpaper_changed_message);
-        rmz::println();
+    void signal_update() {
+        signaled.store(true);
+        rmz::insert_enter();
+        // get the column position of the cursor
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+            cursor_column = csbi.dwCursorPosition.X;
+        }
     }
-    if (!error_message.empty()) {
-        rmz::println(error_message);
-        rmz::println();
-    }
-    if (show_parameters_flag) {
-        print_parameters();
-        rmz::println();
-    }
-    if (show_help_flag) {
-        print_help();
-        rmz::println();
-    } else {
-        print_commands();
-        rmz::println();
-    }
-}
+    void clear_signal() { signaled.store(false); }
+    void clear_error_message() { error_message.clear(); }
+    bool is_signaled() { return signaled.load(); }
 
-std::string ConsoleManager::get_input() {
-    std::string raw_input;
-    std::getline(std::cin, raw_input);
-    while (ConsoleManager::is_signaled()) {
-        ConsoleManager::clear_signal();
-        ConsoleManager::update();
-        rmz::insert_input(raw_input);
+    void update() {
+        rmz::clear_console();
+        if (!wallpaper_changed_message.empty()) {
+            rmz::println(wallpaper_changed_message);
+            rmz::println();
+        }
+        if (!error_message.empty()) {
+            rmz::println(error_message);
+            rmz::println();
+        }
+        if (show_parameters_flag) {
+            print_parameters();
+            rmz::println();
+        }
+        if (show_help_flag) {
+            print_help();
+            rmz::println();
+        } else {
+            print_commands();
+            rmz::println();
+        }
+    }
+
+    std::string get_input() {
+        std::string raw_input;
         std::getline(std::cin, raw_input);
+        while (is_signaled()) {
+            clear_signal();
+            update();
+            rmz::insert_input(raw_input);
+            std::getline(std::cin, raw_input);
+        }
+        return raw_input;
     }
-    return raw_input;
-}
 
-void ConsoleManager::print_commands() {
-    rmz::println("* Commands: {}", join_string(CommandManager::get_strings(), ", "));
-}
-
-void ConsoleManager::print_help() {
-    rmz::println("* Available commands:");
-    for (auto [command, description] : std::views::zip(CommandManager::get_strings(), CommandManager::get_descriptions())) {
-        rmz::println("  - '{}': {}", command, description);
+    void print_commands() {
+        rmz::println("* Commands: {}", join_string(CommandManager::get_strings(), ", "));
     }
-}
 
-void ConsoleManager::print_parameters() {
-    rmz::println("* Current parameters:");
-    rmz::println("  - Duration: {}s", WallpaperChanger::get_duration().count());
-    rmz::println("  - Change order: {}", WallpaperChanger::is_change_order_order() ? "Order" : "Random");
-    rmz::println("  - Automatic wallpaper changer state: {}", 
-        state.load() == RUNNING ? "Running" : (state.load() == PAUSED ? "Paused" : "Stopped"));
-    rmz::println("  - Folders: {}", join_string(WallpaperManager::get_folders(), ", "));
-    rmz::println("  - Auto-save: {}", auto_save ? "On" : "Off");
+    void print_help() {
+        rmz::println("* Available commands:");
+        for (auto [command, description] : std::views::zip(CommandManager::get_strings(), CommandManager::get_descriptions())) {
+            rmz::println("  - '{}': {}", command, description);
+        }
+    }
+
+    void print_parameters() {
+        rmz::println("* Current parameters:");
+        rmz::println("  - Duration: {}s", WallpaperChanger::get_duration().count());
+        rmz::println("  - Change order: {}", WallpaperChanger::is_change_order_order() ? "Order" : "Random");
+        rmz::println("  - Automatic wallpaper changer state: {}", 
+            state.load() == RUNNING ? "Running" : (state.load() == PAUSED ? "Paused" : "Stopped"));
+        rmz::println("  - Folders: {}", join_string(WallpaperManager::get_folders(), ", "));
+        rmz::println("  - Auto-save: {}", auto_save ? "On" : "Off");
+    }
 }
