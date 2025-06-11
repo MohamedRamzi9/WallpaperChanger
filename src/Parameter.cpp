@@ -1,10 +1,9 @@
 #include "Parameter.hpp"
-#include "ConsoleManager.hpp"
 #include "WallpaperChanger.hpp"
 #include "WallpaperManager.hpp"
 #include "CommandManager.hpp"
 #include "Utility.hpp"
-#include "Other.hpp"
+#include "Global.hpp"
 
 namespace Parameters {
     void initialize() {}
@@ -13,7 +12,6 @@ namespace Parameters {
         auto parameters = read(name);
         for (auto& parameter : parameters) {
             if (!action(parameter)) {
-                ConsoleManager::add_error_message(std::format("* Command '{}' not recognized in file '{}'", parameter, name));
             }
         }
     }

@@ -1,10 +1,8 @@
+- commands left to add to new ui : save, load, set,
 
 
-- add the following commands :
+- add the functionality of the rest of the menu options except :
+	- `next, previous` : remove these since they are done using the arrow keys
+	- `exit` : remove this since it is done using the escape key
+	- `add` : remove this since it is done using the windows file dialog
 	
-
-- things to fix :
-
-
-- add the following functionalities later :	
-	- add an init.wallpaper file that gets automatically read if it exists, it serves as a config file that may contain settings or loads another settings file 

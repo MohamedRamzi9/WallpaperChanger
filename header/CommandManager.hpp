@@ -32,6 +32,7 @@ namespace CommandManager {
         std::string get_string();
         std::string get_description();
         nullable<WallpaperChanger::duration_type> parse(const std::string& input);
+        void run(const WallpaperChanger::duration_type& duration);
     };
 
     namespace Add {
@@ -39,30 +40,35 @@ namespace CommandManager {
         std::string get_string();
         std::string get_description();
         nullable<std::string> parse(const std::string& input);
+        void run(const std::string& folder);
     };
 
     namespace Order {
         std::string get_string();
         std::string get_description();
         bool parse(const std::string& input);
+        void run();
     };
 
     namespace Random {
         std::string get_string();
         std::string get_description();
         bool parse(const std::string& input);
+        void run();
     };
 
     namespace Pause {
         std::string get_string();
         std::string get_description();
         bool parse(const std::string& input);
+        void run();
     };
 
     namespace Resume {
         std::string get_string();
         std::string get_description();
         bool parse(const std::string& input);
+        void run();
     };
 
     namespace Next {
@@ -105,6 +111,7 @@ namespace CommandManager {
         std::string get_string();
         std::string get_description();
         bool parse(const std::string& input);
+        void run();
     };
 
     namespace SaveFile {

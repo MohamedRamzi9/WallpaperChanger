@@ -5,17 +5,17 @@
 
 namespace WallpaperChanger {
 
-	enum change_order change_order;
+	enum change_order_type change_order;
 	rmz::timer timer; 
 
 	void initialize() {
 		change_order = ORDER;
-		timer.set_duration(duration_type(10)); 
+		timer.set_duration(duration_type(2)); 
 		timer.init(); 
 	}
-	void set_change_order(enum change_order new_order) {
-		change_order = new_order;
-	}
+	void set_change_order(change_order_type new_order) { change_order = new_order; }
+	// change_order_type get_change_order() { return change_order; }
+	
 	void set_wallpaper(const std::string& path) {
 		SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID)path.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
 	}

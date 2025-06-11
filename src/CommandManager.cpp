@@ -1,5 +1,10 @@
 #include "CommandManager.hpp"
+#include "WallpaperManager.hpp"
+#include "WallpaperChanger.hpp"
+#include "WallpaperGetter.hpp"
+#include "Global.hpp"
 #include "Utility.hpp"
+#include "App.hpp"
 
 namespace CommandManager {
 
@@ -20,7 +25,7 @@ namespace CommandManager {
             { HELP, Help::get_string(), Help::get_description() },
             { CLEAR, Clear::get_string(), Clear::get_description() },
             { PARAMETERS, Parameters::get_string(), Parameters::get_description() },
-            // { SAVEFILE, SaveFile::get_string(), SaveFile::get_description() },
+            { SAVEFILE, SaveFile::get_string(), SaveFile::get_description() },
             { SAVE, Save::get_string(), Save::get_description() },
             { AUTOSAVE, AutoSave::get_string(), AutoSave::get_description() }
         };
@@ -56,6 +61,9 @@ namespace CommandManager {
             char unit = last;
             return {unit == 's' ? WallpaperChanger::duration_type(rmz::seconds(value)) : WallpaperChanger::duration_type(rmz::minutes(value))};
         }
+        void run(const WallpaperChanger::duration_type& duration) {
+            WallpaperChanger::set_duration(duration);
+        }
     }
 
     namespace Add {
@@ -67,30 +75,43 @@ namespace CommandManager {
             if (parts.size() < 2 || parts[0] != "add") return {};
             return parts[1];
         }
+        void run(const std::string& folder) {
+            WallpaperManager::add_folder(folder);
+            WallpaperRandomGetter::refresh();
+            WallpaperOrderGetter::refresh();
+            empty_semaphore.release();
+        }
     }
 
     namespace Order {
         std::string get_string() { return "order"; }
         std::string get_description() { return "Set wallpaper change order to sequential."; }
         bool parse(const std::string& input) { return input == "order"; }
+        void run() { WallpaperChanger::set_change_order(WallpaperChanger::ORDER); }
     }
 
     namespace Random {
         std::string get_string() { return "random"; }
         std::string get_description() { return "Set wallpaper change order to random."; }
         bool parse(const std::string& input) { return input == "random"; }
+        void run() { WallpaperChanger::set_change_order(WallpaperChanger::RANDOM); }
     }
 
     namespace Pause {
         std::string get_string() { return "pause"; }
         std::string get_description() { return "Pause the automatic wallpaper changer."; }
         bool parse(const std::string& input) { return input == "pause"; }
+        void run() { state.store(PAUSED); }
     }
 
     namespace Resume {
         std::string get_string() { return "resume"; }
         std::string get_description() { return "Resume the automatic wallpaper changer."; }
         bool parse(const std::string& input) { return input == "resume"; }
+        void run() { 
+            state.store(RUNNING);
+            pause_semaphore.release();
+        }
     }
 
     namespace Next {
@@ -146,6 +167,7 @@ namespace CommandManager {
         std::string get_string() { return "parameters"; }
         std::string get_description() { return "Show the current parameters."; }
         bool parse(const std::string& input) { return input == "parameters"; }
+        void run() { App::show_parameters(); }
     }
 
     namespace SaveFile {
