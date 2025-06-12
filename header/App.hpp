@@ -6,13 +6,12 @@
 
 #include "rmz_type.hpp"
 
-enum input_enum { UP, DOWN, LEFT, RIGHT, CHARACTER, ENTER };
-using input_type = std::pair<input_enum,char>;
-rmz::type::nullable<input_type> get_input();
 
 
 namespace App {
     enum menu_type { MAIN_MENU, DURATION_MENU } extern menu;
+    enum input_key_enum { UP, DOWN, LEFT, RIGHT, CHARACTER, ENTER };
+    using input_key_type = std::pair<input_key_enum,char>;
 
     extern std::string error_message;
     extern std::string info_message;
@@ -31,8 +30,9 @@ namespace App {
     void clear_wallpaper_changed_message();
 
     void clear_console();
-    std::string get_input_string();
     void set_menu(menu_type new_menu);
+
+
 
 
     namespace MainMenu {

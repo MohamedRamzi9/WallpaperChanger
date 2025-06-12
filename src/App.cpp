@@ -28,8 +28,10 @@ namespace App {
     bool show_parameters_flag = false;
     std::atomic<bool> signal_flag = false;
     std::atomic<bool> is_getting_input_flag = false;
-    using input_key_type = std::pair<input_enum,char>;
+
+    enum input_enum { STRING, KEY } input_type = KEY;
     input_key_type input_key;
+    std::string input_string;
 
     void initialize() { menu = MAIN_MENU; }
     void set_error_message(const std::string& message) { error_message = message; }
@@ -38,7 +40,6 @@ namespace App {
     void set_wallpaper_changed_message(const std::string& message) { wallpaper_changed_message = message; }
     void signal() { 
         signal_flag = true;
-        render();
         if (is_getting_input_flag.load())
             rmz::insert_enter();
     }
@@ -52,34 +53,35 @@ namespace App {
         if (_kbhit()) {
             char c = getch();
             if (c == 13) input_key = input_key_type({ENTER, c});
-            if (c == 0 or c == 224) {
+            else if (c == 0 or c == 224) {
                 c = getch(); // Handle special keys
                 if (c == 72) input_key = input_key_type({UP, c});    // Up arrow key
                 if (c == 80) input_key = input_key_type({DOWN, c});  // Down arrow key
                 if (c == 75) input_key = input_key_type({LEFT, c});  // Left arrow key
                 if (c == 77) input_key = input_key_type({RIGHT, c}); // Right arrow key
+            } else {
+                input_key = input_key_type({CHARACTER, c});
             }
-            input_key = input_key_type({CHARACTER, c});
             return true;
         }
-        input_key = {};
         return false;
     }
     input_key_type& get_input_key() { return input_key; }
-    std::string get_input_string() {
+    void update_input_string() {
         is_getting_input_flag.store(true);
         std::string input;
         std::getline(std::cin, input);
         while (signal_flag.load()) {
-            rmz::println("Asking for input again, old input: {}", input);
-            rmz::insert_input(input);
             signal_flag.store(false);
+            render();
+            rmz::insert_input(input);
             std::getline(std::cin, input);
         }
         is_getting_input_flag.store(false);
 
-        return input;
+        App::input_string = input;
     }
+    std::string& get_input_string() { return input_string; }
 
     void clear_console() { rmz::clear_console(); } 
     void set_menu(menu_type new_menu) { 
@@ -110,6 +112,7 @@ namespace App {
     }
     void update() {
         auto [type, c] = get_input_key();
+        rmz::println("Input Type: {}", int(type));
         if (type == LEFT) WallpaperChanger::set_next_wallpaper();
         else if (type == RIGHT) WallpaperChanger::set_previous_wallpaper();
         else if (menu == MAIN_MENU) MainMenu::update();
@@ -118,13 +121,25 @@ namespace App {
     void run() {
         rmz::enable_ansi();
 
-        render();
         while (true) {
-            if (update_input_key()) {
-                update();
-                if (state.load() == STOPPED) break;
-                render();
+            refresh:
+            render();
+            while (true) {
+                if (signal_flag.load()) {
+                    signal_flag.store(false);
+                    goto refresh;
+                }
+                if (input_type == KEY) {
+                    if (not update_input_key()) { continue; }
+                    else { break; }
+                } else if (input_type == STRING) {
+                    update_input_string();
+                    break;
+                }
             }
+            update();
+            if (state.load() == STOPPED) break;
+            
         }
     }
 
@@ -206,6 +221,8 @@ namespace App {
                         seconds = false;
                         is_getting_duration = true;
                     } 
+                    if (is_getting_duration) 
+                        input_type = STRING;
                 }
                 return;
             } else {
@@ -218,6 +235,7 @@ namespace App {
                 App::set_info_message(rmz::format("Set duration to {} {}", value, seconds ? "seconds" : "minutes"));
                 App::set_menu(App::MAIN_MENU);
                 is_getting_duration = false;
+                input_type = KEY;
             }
         }
         void render() {
