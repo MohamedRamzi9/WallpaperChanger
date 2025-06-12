@@ -39,7 +39,7 @@ namespace App {
     void show_parameters() { show_parameters_flag = true; }
     void set_wallpaper_changed_message(const std::string& message) { wallpaper_changed_message = message; }
     void signal() { 
-        signal_flag = true;
+        signal_flag.store(true);
         if (is_getting_input_flag.load())
             rmz::insert_enter();
     }
@@ -67,19 +67,19 @@ namespace App {
         return false;
     }
     input_key_type& get_input_key() { return input_key; }
-    void update_input_string() {
-        is_getting_input_flag.store(true);
+    rmz::type::nullable<std::string> update_input_string() {
+        rmz::type::nullable<std::string> result{};
         std::string input;
+        is_getting_input_flag.store(true);
         std::getline(std::cin, input);
-        while (signal_flag.load()) {
-            signal_flag.store(false);
-            render();
-            rmz::insert_input(input);
-            std::getline(std::cin, input);
-        }
         is_getting_input_flag.store(false);
+        if (signal_flag.load()) {
+            result = {input};
+        } else {
+            App::input_string = input;
+        }
 
-        App::input_string = input;
+        return result;
     }
     std::string& get_input_string() { return input_string; }
 
@@ -121,25 +121,28 @@ namespace App {
     void run() {
         rmz::enable_ansi();
 
+        render();
         while (true) {
-            refresh:
-            render();
-            while (true) {
-                if (signal_flag.load()) {
-                    signal_flag.store(false);
-                    goto refresh;
+            if (signal_flag.load()) {
+                signal_flag.store(false);
+                render();
+                continue;
+            }
+            if (input_type == KEY) {
+                if (not update_input_key()) {
+                    continue;
                 }
-                if (input_type == KEY) {
-                    if (not update_input_key()) { continue; }
-                    else { break; }
-                } else if (input_type == STRING) {
-                    update_input_string();
-                    break;
+            } else if (input_type == STRING) {
+                if (auto result = update_input_string()) { 
+                    signal_flag.store(false);
+                    render();
+                    rmz::insert_input(result.get());
+                    continue;
                 }
             }
             update();
             if (state.load() == STOPPED) break;
-            
+            render();
         }
     }
 
