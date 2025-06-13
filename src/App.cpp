@@ -121,23 +121,23 @@ namespace App {
     void run() {
         rmz::enable_ansi();
 
+        auto treat_signal = [] {
+            signal_flag.store(false);
+            render();
+        };
+
         render();
         while (true) {
-            if (signal_flag.load()) {
-                signal_flag.store(false);
-                render();
-                continue;
-            }
             if (input_type == KEY) {
-                if (not update_input_key()) {
-                    continue;
+                while (not update_input_key()) {
+                    if (signal_flag.load()) {
+                        treat_signal();
+                    }
                 }
             } else if (input_type == STRING) {
-                if (auto result = update_input_string()) { 
-                    signal_flag.store(false);
-                    render();
+                while (auto result = update_input_string()) { 
+                    treat_signal();
                     rmz::insert_input(result.get());
-                    continue;
                 }
             }
             update();
