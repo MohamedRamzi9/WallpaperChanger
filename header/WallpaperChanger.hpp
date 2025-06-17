@@ -20,4 +20,5 @@ namespace WallpaperChanger {
     bool is_timer_done();
     void set_duration(duration_type duration);
     void init_timer();
+    void refresh();
 };

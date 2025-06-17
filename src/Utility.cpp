@@ -1,4 +1,5 @@
 
+#include "WallpaperManager.hpp"
 #include "Utility.hpp"
 
 #include <algorithm>
@@ -13,7 +14,7 @@ std::vector<std::string> split_string(const std::string& str, char delimiter) {
     }
 
     return result;
-}
+} 
 
 std::string join_string(const std::vector<std::string>& vec, const std::string& delimiter) {
     if (vec.empty()) return "";
@@ -35,4 +36,24 @@ void right_trim(std::string &s) {
 void trim(std::string &s) {
     left_trim(s);
     right_trim(s);
+}
+
+std::pair<std::string, int> count_wallpapers_message(const std::string& folder) {
+    int count = 0;
+    std::string message;
+
+    for (const auto& entry : std::filesystem::directory_iterator(folder)) {
+        if (WallpaperManager::is_valid_wallpaper(entry.path())) {
+            count++;
+            if (count <= 5) {
+                message += entry.path().string() + "\n";
+            }
+        }
+    }
+
+    if (count > 5) {
+        message += "... and more\n";
+    }
+
+    return {message, count};
 }

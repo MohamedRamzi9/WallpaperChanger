@@ -79,7 +79,7 @@ void main_function() {
     if (auto_save)
         Parameters::save("settings.wallpaper");
 
-    // wallpaper_thread.join();
+    wallpaper_thread.join();
 }
 
 void test_function() {

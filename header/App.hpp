@@ -9,8 +9,8 @@
 
 
 namespace App {
-    enum menu_type { MAIN_MENU, DURATION_MENU } extern menu;
-    enum input_key_enum { UP, DOWN, LEFT, RIGHT, CHARACTER, ENTER };
+    enum menu_type { MAIN_MENU, DURATION_MENU, ADD_MENU, REMOVE_MENU} extern menu;
+    enum input_key_enum { UP, DOWN, LEFT, RIGHT, CHARACTER, ENTER, ESCAPE };
     using input_key_type = std::pair<input_key_enum,char>;
 
     extern std::string error_message;
@@ -43,6 +43,18 @@ namespace App {
     }
 
     namespace DurationMenu {
+        void initialize();
+        void update();
+        void render();
+    }
+
+    namespace AddMenu {
+        void initialize();
+        void update();
+        void render();
+    }
+
+    namespace RemoveMenu {
         void initialize();
         void update();
         void render();

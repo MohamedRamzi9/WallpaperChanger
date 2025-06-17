@@ -2,13 +2,13 @@
 #include "WallpaperManager.hpp"
 
 #include <iostream>
-#include <filesystem>
 
 
 namespace WallpaperManager {
 
 	std::vector<std::string> folders;
 	std::vector<std::string> wallpapers;
+	std::vector<std::string> wallpaper_extensions = {".jpg", ".jpeg", ".png", ".bmp"};
 
 
 	void initialize() {
@@ -20,6 +20,13 @@ namespace WallpaperManager {
 			load_wallpapers(folder);
 		} else {
 			std::cerr << "Folder does not exist or is not a directory: " << folder << '\n';
+		}
+	}
+	void remove_folder(const std::string& folder) {
+		auto it = std::remove(folders.begin(), folders.end(), folder);
+		if (it != folders.end()) {
+			folders.erase(it, folders.end());
+			load_all_wallpapers(); // Reload wallpapers after removing a folder
 		}
 	}
 	bool empty() {
@@ -48,7 +55,7 @@ namespace WallpaperManager {
 		wallpapers.clear();
 		for (const auto& folder : folders) {
 			load_wallpapers(folder);
-		}
+		} 
 	}
 	int get_wallpaper_count() {
 		return wallpapers.size();
@@ -59,6 +66,10 @@ namespace WallpaperManager {
 	std::string get_wallpaper(int index) {
 		return wallpapers[index];
 	}
-
+	bool is_valid_wallpaper(const std::filesystem::path& path) {
+		std::string ext = path.extension().string();
+		for (auto& c : ext) c = static_cast<char>(tolower(c));
+		return std::any_of(wallpaper_extensions.begin(), wallpaper_extensions.end(), [&ext](const std::string& valid_ext) { return ext == valid_ext; });
+	}
 
 }

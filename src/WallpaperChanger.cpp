@@ -58,5 +58,9 @@ namespace WallpaperChanger {
 	void init_timer() {
 		timer.init();
 	}
+	void refresh() {
+		WallpaperOrderGetter::refresh();
+		WallpaperRandomGetter::refresh();
+	}
 
 }

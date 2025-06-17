@@ -77,9 +77,23 @@ namespace CommandManager {
         }
         void run(const std::string& folder) {
             WallpaperManager::add_folder(folder);
-            WallpaperRandomGetter::refresh();
-            WallpaperOrderGetter::refresh();
+            WallpaperChanger::refresh();
             empty_semaphore.release();
+        }
+    }
+
+    namespace Remove {
+        std::string get_string(const std::vector<std::string>& folders) { return "remove " + join_string(folders, " "); }
+        std::string get_string() { return "remove <folder>"; }
+        std::string get_description() { return "Remove a folder from the list of wallpaper folders and reload wallpapers."; }
+        nullable<std::string> parse(const std::string& input) {
+            auto parts = split_string(input, ' ');
+            if (parts.size() < 2 || parts[0] != "remove") return {};
+            return parts[1];
+        }
+        void run(const std::string& folder) {
+            WallpaperManager::remove_folder(folder);
+            WallpaperChanger::refresh();
         }
     }
 
