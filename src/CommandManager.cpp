@@ -167,14 +167,14 @@ namespace CommandManager {
             if (parts.size() == 2) {
                 if (parts[1] == "help") return {HELP};
                 if (parts[1] == "parameters") return {PARAMETERS};
-                if (parts[1] == "errors") return {ERROR};
+                if (parts[1] == "errors") return {CLEAR_ERROR};
             }
             return {};
         }
         bool is_clear_all(type clear_type) { return clear_type == ALL; }
         bool is_clear_help(type clear_type) { return clear_type == HELP; }
         bool is_clear_parameters(type clear_type) { return clear_type == PARAMETERS; }
-        bool is_clear_error(type clear_type) { return clear_type == ERROR; }
+        bool is_clear_error(type clear_type) { return clear_type == CLEAR_ERROR; }
     }
 
     namespace Parameters {

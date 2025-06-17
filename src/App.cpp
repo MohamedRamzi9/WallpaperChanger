@@ -29,73 +29,103 @@ namespace App {
     std::string wallpaper_changed_message;
     bool show_parameters_flag = false;
     std::atomic<bool> signal_flag = false;
-    std::atomic<bool> is_getting_input_flag = false;
-
-    enum input_enum { STRING, KEY } input_type = KEY;
-    input_key_type input_key;
-    std::string input_string;
-
-    void initialize() { menu = MAIN_MENU; }
+    
+    void initialize() { 
+        set_menu(MAIN_MENU);
+        Input::initialize(); 
+        Input::set_input_key();
+    }
     void set_error_message(const std::string& message) { error_message = message; }
     void set_info_message(const std::string& message) { info_message = message; }
     void show_parameters() { show_parameters_flag = true; }
     void set_wallpaper_changed_message(const std::string& message) { wallpaper_changed_message = message; }
-    void signal() { 
-        signal_flag.store(true);
-        if (is_getting_input_flag.load())
-            rmz::insert_enter();
-    }
-
+    
     void clear_error_message() { error_message.clear(); }
     void clear_info_message() { info_message.clear(); }
     void clear_parameters() { show_parameters_flag = false; }
     void clear_wallpaper_changed_message() { wallpaper_changed_message.clear(); }
 
-    bool update_input_key() {
-        if (_kbhit()) {
-            char c = getch();
-            if (c == 13) input_key = input_key_type({ENTER, c});
-            else if (c == 27) input_key = input_key_type({ESCAPE, c}); // Escape key
-            else if (c == 0 or c == 224) {
-                c = getch(); // Handle special keys
-                if (c == 72) input_key = input_key_type({UP, c});    // Up arrow key
-                else if (c == 80) input_key = input_key_type({DOWN, c});  // Down arrow key
-                else if (c == 75) input_key = input_key_type({LEFT, c});  // Left arrow key
-                else if (c == 77) input_key = input_key_type({RIGHT, c}); // Right arrow key
-            } else {
-                input_key = input_key_type({CHARACTER, c});
-            }
-            return true;
-        }
-        return false;
+    void signal() { 
+        signal_flag.store(true);
+        if (Input::is_getting_input())
+            Input::stop_getting_input();
     }
-    input_key_type& get_input_key() { return input_key; }
-    rmz::type::nullable<std::string> update_input_string() {
-        rmz::type::nullable<std::string> result{};
-        std::string input;
-        is_getting_input_flag.store(true);
-        std::getline(std::cin, input);
-        is_getting_input_flag.store(false);
-        if (signal_flag.load()) {
-            result = {input};
-        } else {
-            App::input_string = input;
+
+    namespace Input {
+        HANDLE hStdin;
+        input_enum input_type;
+        INPUT_RECORD input_key;
+        std::string input_string;
+        std::atomic<bool> is_getting_input_flag(false);
+
+        void initialize() {
+            hStdin = GetStdHandle(STD_INPUT_HANDLE);
+            if (hStdin == INVALID_HANDLE_VALUE) {
+                rmz::println("Error: Unable to get standard input handle.");
+                std::exit(1); 
+            }
+        }
+        void set_input_key() {
+            SetConsoleMode(hStdin, ENABLE_WINDOW_INPUT | ENABLE_PROCESSED_INPUT); 
+            input_type = KEY;
+        }
+        void set_input_string() { 
+            SetConsoleMode(hStdin, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT); 
+            FlushConsoleInputBuffer(hStdin); // Clear any unread key events
+            input_type = STRING;
         }
 
-        return result;
+        bool is_getting_input() { return is_getting_input_flag.load(); }
+        bool is_input_string() { return input_type == STRING; }
+        bool is_input_key() { return input_type == KEY; }
+
+        void stop_getting_input() { rmz::insert_enter(); }
+        void insert_input(const std::string& input) { rmz::insert_input(input); }
+
+        void update_input_key() {
+            constexpr std::array valid_keys = { VK_ESCAPE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_RETURN };
+            auto is_valid_key = [valid_keys](INPUT_RECORD& keyEvent) {
+                return std::ranges::find(valid_keys, keyEvent.Event.KeyEvent.wVirtualKeyCode) != valid_keys.end()
+                    or (keyEvent.Event.KeyEvent.uChar.AsciiChar >= 32 and keyEvent.Event.KeyEvent.uChar.AsciiChar <= 126);
+            };
+
+            INPUT_RECORD inputRecord;
+            DWORD events;
+            while (true) {
+                is_getting_input_flag.store(true);
+                ReadConsoleInput(hStdin, &inputRecord, 1, &events);
+                is_getting_input_flag.store(false);
+                if (is_valid_key(inputRecord)) {
+                    input_key = inputRecord;
+                    break;
+                } else continue; 
+            }
+
+        }
+        void update_input_string() {
+            is_getting_input_flag.store(true);
+            std::getline(std::cin, input_string);
+            is_getting_input_flag.store(false);
+        }
+        std::string& get_input_string() { return input_string; }
+        char get_char() { return input_key.Event.KeyEvent.uChar.AsciiChar; }
+        bool is_key_escape() { return input_key.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE; }
+        bool is_key_up() { return input_key.Event.KeyEvent.wVirtualKeyCode == VK_UP; }
+        bool is_key_down() { return input_key.Event.KeyEvent.wVirtualKeyCode == VK_DOWN; }
+        bool is_key_left() { return input_key.Event.KeyEvent.wVirtualKeyCode == VK_LEFT; }
+        bool is_key_right() { return input_key.Event.KeyEvent.wVirtualKeyCode == VK_RIGHT; }
+        bool is_key_enter() { return input_key.Event.KeyEvent.wVirtualKeyCode == VK_RETURN; }
+        bool is_key_char() { return input_key.Event.KeyEvent.uChar.AsciiChar >= 32 and input_key.Event.KeyEvent.uChar.AsciiChar <= 126; }
     }
-    std::string& get_input_string() { return input_string; }
-    void set_input_type(input_enum type) { input_type = type; }
-    bool is_input_string() { return input_type == STRING; }
-    bool is_input_key() { return input_type == KEY; }
-        
+    
+    
     void clear_console() { rmz::clear_console(); } 
     void set_menu(menu_type new_menu) { 
         menu = new_menu; 
         if (new_menu == MAIN_MENU or new_menu == DURATION_MENU or new_menu == REMOVE_MENU) {
-            set_input_type(KEY);
+            Input::set_input_key();
         } else if (new_menu == ADD_MENU) {
-            set_input_type(STRING);
+            Input::set_input_string();
         } 
     }
 
@@ -124,9 +154,11 @@ namespace App {
         else rmz::println("* Unknown Menu\n");
     }
     void update() {
-        auto [type, c] = get_input_key();
-        if (type == LEFT and WallpaperManager::get_wallpaper_count() > 0) WallpaperChanger::set_next_wallpaper();
-        else if (type == RIGHT and WallpaperManager::get_wallpaper_count() > 0) WallpaperChanger::set_previous_wallpaper();
+        // auto [type, c] = Input::get_input_key();
+        if (Input::is_key_left() and WallpaperManager::get_wallpaper_count() > 0)
+            set_wallpaper_changed_message(WallpaperChanger::set_next_wallpaper());
+        else if (Input::is_key_right() and WallpaperManager::get_wallpaper_count() > 0)
+            set_wallpaper_changed_message(WallpaperChanger::set_previous_wallpaper());
         else if (menu == MAIN_MENU) MainMenu::update();
         else if (menu == ADD_MENU) AddMenu::update();
         else if (menu == DURATION_MENU) DurationMenu::update();
@@ -134,7 +166,6 @@ namespace App {
     }
     void run() {
         rmz::enable_ansi();
-
         auto treat_signal = [] {
             signal_flag.store(false);
             render();
@@ -142,16 +173,18 @@ namespace App {
 
         render();
         while (true) {
-            if (input_type == KEY) {
-                while (not update_input_key()) {
-                    if (signal_flag.load()) {
-                        treat_signal();
-                    }
-                }
-            } else if (is_input_string()) {
-                while (auto result = update_input_string()) {
+            if (Input::is_input_key()) {
+                Input::update_input_key();
+                if (signal_flag.load()) {
                     treat_signal();
-                    rmz::insert_input(result.get());
+                    continue; 
+                }
+            } else if (Input::is_input_string()) {
+                Input::update_input_string();
+                if (signal_flag.load()) {
+                    treat_signal();
+                    Input::insert_input(Input::get_input_string());
+                    continue;
                 }
             }
             update();
@@ -166,10 +199,11 @@ namespace App {
 
         void initialize() { choice = 0; }
         void update() {
-            auto [type, c] = get_input_key();
-            if (type == UP and choice > 0) choice--;
-            else if (type == DOWN and choice < CommandManager::get_command_count() - 1) choice++;
-            else if (type == CHARACTER) {
+            // auto [type, c] = Input::get_input_key();
+            if (Input::is_key_up() and choice > 0) choice--;
+            else if (Input::is_key_down() and choice < CommandManager::get_command_count() - 1) choice++;
+            else if (Input::is_key_char()) {
+                char c = Input::get_char();
                 if (c == 'e') {
                     rmz::print("Exiting...\n");
                     state.store(STOPPED);
@@ -257,10 +291,11 @@ namespace App {
         void initialize() {}
         void update() {
             if (not is_getting_duration) { 
-                auto [type, c] = App::get_input_key();
-                if (type == ESCAPE) {
+                // auto [type, c] = Input::get_input_key();
+                if (Input::is_key_escape()) {
                     App::set_menu(App::MAIN_MENU);
-                } else if (type == CHARACTER) {
+                } else if (Input::is_key_char()) {
+                    char c = Input::get_char();
                     if (c == 's') {
                         seconds = true;
                         is_getting_duration = true;
@@ -269,11 +304,11 @@ namespace App {
                         is_getting_duration = true;
                     } 
                     if (is_getting_duration) 
-                        App::set_input_type(App::STRING);
+                        Input::set_input_string();
                 }
                 return;
             } else {
-                auto input_duration = App::get_input_string();
+                auto input_duration = Input::get_input_string();
                 if (not input_duration.empty()) {
                     int value = stoi(input_duration);
                     if (seconds) 
@@ -283,7 +318,7 @@ namespace App {
                     App::set_info_message(rmz::format("Set duration to {} {}", value, seconds ? "seconds" : "minutes"));
                 }
                 is_getting_duration = false;
-                App::set_input_type(App::KEY);
+                Input::set_input_key();
             }
         }
         void render() {
@@ -300,7 +335,7 @@ namespace App {
     namespace AddMenu {
         void initialize() {}
         void update() {
-            auto folder = App::get_input_string();
+            auto folder = Input::get_input_string();
             if (not folder.empty()) {
                 if (std::filesystem::exists(folder) && std::filesystem::is_directory(folder)) {
                     CommandManager::Add::run(folder);
@@ -322,11 +357,11 @@ namespace App {
         int choice = 0;
         void initialize() {}
         void update() {
-            auto [type, c] = get_input_key();
-            if (type == UP and choice > 0) choice--;
-            else if (type == DOWN and choice < WallpaperManager::get_folders().size() - 1) choice++;
-            else if (type == ESCAPE) App::set_menu(App::MAIN_MENU);
-            else if (type == ENTER) {
+            // auto [type, c] = Input::get_input_key();
+            if (Input::is_key_up() and choice > 0) choice--;
+            else if (Input::is_key_down() and choice < WallpaperManager::get_folders().size() - 1) choice++;
+            else if (Input::is_key_escape()) App::set_menu(App::MAIN_MENU);
+            else if (Input::is_key_enter()) {
                 auto& folder = WallpaperManager::get_folders()[choice];
                 CommandManager::Remove::run(folder);
                 auto [wallpapers, count] = count_wallpapers_message(folder);

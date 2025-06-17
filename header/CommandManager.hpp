@@ -103,7 +103,7 @@ namespace CommandManager {
     };
 
     namespace Clear {
-        enum type { HELP, PARAMETERS, ERROR, ALL };
+        enum type { HELP, PARAMETERS, CLEAR_ERROR, ALL };
         std::string get_string();
         std::string get_description();
         nullable<type> parse(const std::string& input);

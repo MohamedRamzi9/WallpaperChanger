@@ -1,5 +1,4 @@
 
-#include <thread>
 
 #include "App.hpp"
 #include "WallpaperChanger.hpp"
@@ -11,7 +10,9 @@
 #include "Global.hpp"
 
 #include <filesystem>
+#include <thread>
 
+#include "rmz_print.hpp"
 
 
 
@@ -82,7 +83,16 @@ void main_function() {
     wallpaper_thread.join();
 }
 
+
 void test_function() {
+    using namespace App;
+    Input::initialize();
+    Input::set_input_key();
+
+    while (true) {
+        Input::update_input_key();
+        rmz::println("Input Virtual Key: {}", Input::input_key.Event.KeyEvent.wVirtualKeyCode);
+    }
 }
 
 int main() {
