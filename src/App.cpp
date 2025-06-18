@@ -142,7 +142,7 @@ namespace App {
             rmz::println("* Parameters:\n");
             rmz::println(" - Save File: {}", save_file);
             rmz::println(" - Auto Save: {}", auto_save);
-            rmz::println(" - Wallpaper Order: {}", WallpaperChanger::is_change_order_order() ? "Sequential" : "Random");
+            rmz::println(" - Wallpaper Order: {}", WallpaperChanger::is_change_order_sequential() ? "Sequential" : "Random");
             rmz::println(" - Wallpaper Duration: {}s", WallpaperChanger::get_duration().count());
             rmz::println(" - Wallpaper Changer: {}", state.load() == RUNNING ? "Running" : "Paused");
             rmz::println();
@@ -224,24 +224,24 @@ namespace App {
                     }
 
                 } else if (c == 'o') {
-                    CommandManager::Order::run();
+                    WallpaperChanger::set_change_order_sequential();
 
                 } else if (c == 'r') {
-                    CommandManager::Random::run();
+                    WallpaperChanger::set_change_order_random();
                 
                 } else if (c == 'd') {
                     App::set_menu(App::DURATION_MENU);
 
                 } else if (c == 'p') {
-                    CommandManager::Pause::run();
+                    pause_wallpaper_changer();
                     App::set_info_message("Paused wallpaper changer");
 
                 } else if (c == 'c') {
-                    CommandManager::Resume::run();
+                    resume_wallpaper_changer();
                     App::set_info_message("Resumed wallpaper changer");
 
                 } else if (c == 'i') {
-                    CommandManager::Parameters::run();
+                    App::show_parameters();
 
                 } else if (c == 'x') {
                     App::clear_info_message();

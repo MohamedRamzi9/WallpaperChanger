@@ -3,6 +3,7 @@
 #include "WallpaperChanger.hpp"
 #include "WallpaperManager.hpp"
 #include "Parameter.hpp"
+#include "App.hpp"
 
 std::counting_semaphore<0> pause_semaphore(0);
 std::counting_semaphore<0> empty_semaphore(0);
@@ -75,3 +76,6 @@ bool action(const std::string& input) {
     
     return valid_command;
 }
+
+void pause_wallpaper_changer() { state.store(PAUSED); }
+void resume_wallpaper_changer() { state.store(RUNNING); }

@@ -9,19 +9,19 @@ namespace WallpaperChanger {
 	rmz::timer timer; 
 
 	void initialize() {
-		change_order = ORDER;
+		change_order = SEQUENTIAL;
 		timer.set_duration(duration_type(2)); 
 		timer.init(); 
 	}
-	void set_change_order(change_order_type new_order) { change_order = new_order; }
+	// void set_change_order(change_order_type new_order) { change_order = new_order; }
 	// change_order_type get_change_order() { return change_order; }
+	void set_change_order_random() { change_order = RANDOM; }
+	void set_change_order_sequential() { change_order = SEQUENTIAL; }
 	
-	void set_wallpaper(const std::string& path) {
-		SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID)path.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
-	}
+	void set_wallpaper(const std::string& path) { SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, (PVOID)path.c_str(), SPIF_UPDATEINIFILE | SPIF_SENDCHANGE); }
 	std::string set_next_wallpaper() {
 		std::string wallpaper;
-		if (change_order == ORDER) {
+		if (change_order == SEQUENTIAL) {
 			wallpaper = WallpaperOrderGetter::get_next_wallpaper();
 		} else {
 			wallpaper = WallpaperRandomGetter::get_next_wallpaper();
@@ -31,7 +31,7 @@ namespace WallpaperChanger {
 	}
 	std::string set_previous_wallpaper() {
 		std::string wallpaper;
-		if (change_order == ORDER) {
+		if (change_order == SEQUENTIAL) {
 			wallpaper = WallpaperOrderGetter::get_previous_wallpaper();
 		} else {
 			wallpaper = WallpaperRandomGetter::get_previous_wallpaper();
@@ -39,25 +39,18 @@ namespace WallpaperChanger {
 		set_wallpaper(wallpaper);
 		return wallpaper;
 	}
-	bool is_change_order_random() {
-		return change_order == RANDOM;
-	}
-	bool is_change_order_order() {
-		return change_order == ORDER;
-	}
-	duration_type get_duration() {
-		return timer.get_duration(); 
-	}
-	bool is_timer_done() {
-		return timer.is_done();
-	}
+	
+	bool is_change_order_random() { return change_order == RANDOM; }
+	bool is_change_order_sequential() { return change_order == SEQUENTIAL; }
+
+	duration_type get_duration() { return timer.get_duration(); }
+	bool is_timer_done() { return timer.is_done(); }
 	void set_duration(duration_type duration) {
 		timer.set_duration(duration);
 		timer.init();
 	}
-	void init_timer() {
-		timer.init();
-	}
+	void init_timer() { timer.init(); }
+
 	void refresh() {
 		WallpaperOrderGetter::refresh();
 		WallpaperRandomGetter::refresh();

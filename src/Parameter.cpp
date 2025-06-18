@@ -21,7 +21,7 @@ namespace Parameters {
         std::ofstream file(name, std::ios::trunc);
         write_line(file, CommandManager::Duration::get_string(WallpaperChanger::get_duration()));
         write_line(file, CommandManager::Add::get_string(WallpaperManager::get_folders()));
-        write_line(file, WallpaperChanger::is_change_order_order() 
+        write_line(file, WallpaperChanger::is_change_order_sequential() 
             ? CommandManager::Order::get_string() 
             : CommandManager::Random::get_string());
         write_line(file, CommandManager::AutoSave::get_string(auto_save));

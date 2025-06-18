@@ -101,14 +101,14 @@ namespace CommandManager {
         std::string get_string() { return "order"; }
         std::string get_description() { return "Set wallpaper change order to sequential."; }
         bool parse(const std::string& input) { return input == "order"; }
-        void run() { WallpaperChanger::set_change_order(WallpaperChanger::ORDER); }
+        void run() { WallpaperChanger::set_change_order_sequential(); }
     }
 
     namespace Random {
         std::string get_string() { return "random"; }
         std::string get_description() { return "Set wallpaper change order to random."; }
         bool parse(const std::string& input) { return input == "random"; }
-        void run() { WallpaperChanger::set_change_order(WallpaperChanger::RANDOM); }
+        void run() { WallpaperChanger::set_change_order_random(); }
     }
 
     namespace Pause {

@@ -16,3 +16,7 @@ extern std::string save_file;
 extern bool auto_save;
 
 bool action(const std::string& input);
+
+
+void pause_wallpaper_changer();
+void resume_wallpaper_changer();
