@@ -95,10 +95,10 @@ namespace App {
                 is_getting_input_flag.store(true);
                 ReadConsoleInput(hStdin, &inputRecord, 1, &events);
                 is_getting_input_flag.store(false);
-                if (is_valid_key(inputRecord)) {
+                if (inputRecord.Event.KeyEvent.bKeyDown and is_valid_key(inputRecord)) {
                     input_key = inputRecord;
                     break;
-                } else continue; 
+                }
             }
 
         }
@@ -144,6 +144,7 @@ namespace App {
             rmz::println(" - Auto Save: {}", auto_save);
             rmz::println(" - Wallpaper Order: {}", WallpaperChanger::is_change_order_order() ? "Sequential" : "Random");
             rmz::println(" - Wallpaper Duration: {}s", WallpaperChanger::get_duration().count());
+            rmz::println(" - Wallpaper Changer: {}", state.load() == RUNNING ? "Running" : "Paused");
             rmz::println();
         }
 
@@ -155,7 +156,7 @@ namespace App {
     }
     void update() {
         // auto [type, c] = Input::get_input_key();
-        if (Input::is_key_left() and WallpaperManager::get_wallpaper_count() > 0)
+        if (Input::is_key_left() and WallpaperManager::get_wallpaper_count() > 0) 
             set_wallpaper_changed_message(WallpaperChanger::set_next_wallpaper());
         else if (Input::is_key_right() and WallpaperManager::get_wallpaper_count() > 0)
             set_wallpaper_changed_message(WallpaperChanger::set_previous_wallpaper());
