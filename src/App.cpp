@@ -6,6 +6,7 @@
 #include "Parameter.hpp"
 #include "Utility.hpp"
 #include "Global.hpp"
+#include "WallpaperChangerService.hpp"
 
 #include <ranges>
 #include <conio.h>
@@ -144,7 +145,7 @@ namespace App {
             rmz::println(" - Auto Save: {}", auto_save);
             rmz::println(" - Wallpaper Order: {}", WallpaperChanger::is_change_order_sequential() ? "Sequential" : "Random");
             rmz::println(" - Wallpaper Duration: {}s", WallpaperChanger::get_duration().count());
-            rmz::println(" - Wallpaper Changer: {}", state.load() == RUNNING ? "Running" : "Paused");
+            rmz::println(" - Wallpaper Changer: {}", WallpaperChangerService::is_running() ? "Running" : "Paused");
             rmz::println();
         }
 
@@ -189,7 +190,7 @@ namespace App {
                 }
             }
             update();
-            if (state.load() == STOPPED) break;
+            if (WallpaperChangerService::is_stopped()) break;
             render();
         }
     }
@@ -207,9 +208,7 @@ namespace App {
                 char c = Input::get_char();
                 if (c == 'e') {
                     rmz::print("Exiting...\n");
-                    state.store(STOPPED);
-                    empty_semaphore.release(); 
-                    pause_semaphore.release();
+                    WallpaperChangerService::stop();
 
                 } else if (c == 'a') {
                     App::set_menu(App::ADD_MENU);
@@ -252,8 +251,9 @@ namespace App {
                     WallpaperManager::load_all_wallpapers();
                     WallpaperChanger::refresh();
                     if (WallpaperManager::get_wallpaper_count() > 0) {
-                        empty_semaphore.release();
+                        WallpaperChangerService::notify_added_wallpaper();
                     }
+                    
                 } else if (c == 'f') {
                     std::string folders_message = "Wallpaper Folders:\n";
                     for (const auto& folder : WallpaperManager::get_folders()) {
@@ -313,9 +313,9 @@ namespace App {
                 if (not input_duration.empty()) {
                     int value = stoi(input_duration);
                     if (seconds) 
-                        CommandManager::Duration::run(rmz::seconds(value));
+                        WallpaperChanger::set_duration(rmz::seconds(value));
                     else
-                        CommandManager::Duration::run(rmz::minutes(value));
+                        WallpaperChanger::set_duration(rmz::minutes(value));
                     App::set_info_message(rmz::format("Set duration to {} {}", value, seconds ? "seconds" : "minutes"));
                 }
                 is_getting_duration = false;
@@ -339,7 +339,9 @@ namespace App {
             auto folder = Input::get_input_string();
             if (not folder.empty()) {
                 if (std::filesystem::exists(folder) && std::filesystem::is_directory(folder)) {
-                    CommandManager::Add::run(folder);
+                    WallpaperManager::add_folder(folder);
+                    WallpaperChanger::refresh();
+                    WallpaperChangerService::notify_added_wallpaper();
                     auto [wallpapers, count] = count_wallpapers_message(folder);
                     App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
                 } else {
@@ -364,7 +366,9 @@ namespace App {
             else if (Input::is_key_escape()) App::set_menu(App::MAIN_MENU);
             else if (Input::is_key_enter()) {
                 auto& folder = WallpaperManager::get_folders()[choice];
-                CommandManager::Remove::run(folder);
+                // CommandManager::Remove::run(folder);
+                WallpaperManager::remove_folder(folder);
+                WallpaperChanger::refresh();
                 auto [wallpapers, count] = count_wallpapers_message(folder);
                 App::set_info_message(rmz::format("Removed folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
                 App::set_menu(App::MAIN_MENU);

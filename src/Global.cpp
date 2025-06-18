@@ -4,10 +4,11 @@
 #include "WallpaperManager.hpp"
 #include "Parameter.hpp"
 #include "App.hpp"
+#include "WallpaperChangerService.hpp"
 
-std::counting_semaphore<0> pause_semaphore(0);
-std::counting_semaphore<0> empty_semaphore(0);
-std::atomic<State> state{RUNNING};
+// std::counting_semaphore<0> pause_semaphore(0);
+// std::counting_semaphore<0> empty_semaphore(0);
+// std::atomic<State> state{RUNNING};
 std::string save_file = "settings.wallpaper";
 bool auto_save = true;
 
@@ -17,22 +18,29 @@ bool action(const std::string& input) {
     bool valid_command = true;
     
     if (CommandManager::Order::parse(input)) {
-        CommandManager::Order::run();
+        // CommandManager::Order::run();
+        WallpaperChanger::set_change_order_sequential();
 
     } else if (CommandManager::Random::parse(input)) {
-        CommandManager::Random::run();
+        // CommandManager::Random::run();
+        WallpaperChanger::set_change_order_random();
         
     } else if (auto result = CommandManager::Duration::parse(input)) {
         WallpaperChanger::set_duration(result.get());
 
     } else if (CommandManager::Pause::parse(input)) {
-        CommandManager::Pause::run();
+        // CommandManager::Pause::run();
+        WallpaperChangerService::pause();
 
     } else if (auto result = CommandManager::Add::parse(input)) {
-        CommandManager::Add::run(result.get());
+        // CommandManager::Add::run(result.get());
+        WallpaperManager::add_folder(result.get());
+        WallpaperChanger::refresh();
+        WallpaperChangerService::notify_added_wallpaper();
 
     } else if (CommandManager::Resume::parse(input)) {
-        CommandManager::Resume::run();
+        // CommandManager::Resume::run();
+        WallpaperChangerService::resume();
 
     } else if (CommandManager::Next::parse(input)) {
         WallpaperChanger::set_next_wallpaper();
@@ -77,5 +85,5 @@ bool action(const std::string& input) {
     return valid_command;
 }
 
-void pause_wallpaper_changer() { state.store(PAUSED); }
-void resume_wallpaper_changer() { state.store(RUNNING); }
+void pause_wallpaper_changer() { WallpaperChangerService::pause(); }
+void resume_wallpaper_changer() { WallpaperChangerService::resume(); }

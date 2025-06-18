@@ -61,9 +61,9 @@ namespace CommandManager {
             char unit = last;
             return {unit == 's' ? WallpaperChanger::duration_type(rmz::seconds(value)) : WallpaperChanger::duration_type(rmz::minutes(value))};
         }
-        void run(const WallpaperChanger::duration_type& duration) {
-            WallpaperChanger::set_duration(duration);
-        }
+        // void run(const WallpaperChanger::duration_type& duration) {
+        //     WallpaperChanger::set_duration(duration);
+        // }
     }
 
     namespace Add {
@@ -75,11 +75,11 @@ namespace CommandManager {
             if (parts.size() < 2 || parts[0] != "add") return {};
             return parts[1];
         }
-        void run(const std::string& folder) {
-            WallpaperManager::add_folder(folder);
-            WallpaperChanger::refresh();
-            empty_semaphore.release();
-        }
+        // void run(const std::string& folder) {
+        //     WallpaperManager::add_folder(folder);
+        //     WallpaperChanger::refresh();
+        //     empty_semaphore.release();
+        // }
     }
 
     namespace Remove {
@@ -91,41 +91,41 @@ namespace CommandManager {
             if (parts.size() < 2 || parts[0] != "remove") return {};
             return parts[1];
         }
-        void run(const std::string& folder) {
-            WallpaperManager::remove_folder(folder);
-            WallpaperChanger::refresh();
-        }
+        // void run(const std::string& folder) {
+        //     WallpaperManager::remove_folder(folder);
+        //     WallpaperChanger::refresh();
+        // }
     }
 
     namespace Order {
         std::string get_string() { return "order"; }
         std::string get_description() { return "Set wallpaper change order to sequential."; }
         bool parse(const std::string& input) { return input == "order"; }
-        void run() { WallpaperChanger::set_change_order_sequential(); }
+        // void run() { WallpaperChanger::set_change_order_sequential(); }
     }
 
     namespace Random {
         std::string get_string() { return "random"; }
         std::string get_description() { return "Set wallpaper change order to random."; }
         bool parse(const std::string& input) { return input == "random"; }
-        void run() { WallpaperChanger::set_change_order_random(); }
+        // void run() { WallpaperChanger::set_change_order_random(); }
     }
 
     namespace Pause {
         std::string get_string() { return "pause"; }
         std::string get_description() { return "Pause the automatic wallpaper changer."; }
         bool parse(const std::string& input) { return input == "pause"; }
-        void run() { state.store(PAUSED); }
+        // void run() { state.store(PAUSED); }
     }
 
     namespace Resume {
         std::string get_string() { return "resume"; }
         std::string get_description() { return "Resume the automatic wallpaper changer."; }
         bool parse(const std::string& input) { return input == "resume"; }
-        void run() { 
-            state.store(RUNNING);
-            pause_semaphore.release();
-        }
+        // void run() { 
+        //     state.store(RUNNING);
+        //     pause_semaphore.release();
+        // }
     }
 
     namespace Next {
@@ -144,10 +144,10 @@ namespace CommandManager {
         std::string get_string() { return "set <path>"; }
         std::string get_description() { return "Set the wallpaper to a specific image file."; }
         nullable<std::string> parse(const std::string& input) {
-        auto parts = split_string(input, ' ');
-        if (parts.size() != 2 || parts[0] != "set") return {};
-        return parts[1];
-    }
+            auto parts = split_string(input, ' ');
+            if (parts.size() != 2 || parts[0] != "set") return {};
+            return parts[1];
+        }
     }
 
     namespace Help {
@@ -181,7 +181,7 @@ namespace CommandManager {
         std::string get_string() { return "parameters"; }
         std::string get_description() { return "Show the current parameters."; }
         bool parse(const std::string& input) { return input == "parameters"; }
-        void run() { App::show_parameters(); }
+        // void run() { App::show_parameters(); }
     }
 
     namespace SaveFile {
