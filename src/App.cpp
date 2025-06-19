@@ -125,7 +125,7 @@ namespace App {
         menu = new_menu; 
         if (new_menu == MAIN_MENU or new_menu == DURATION_MENU or new_menu == REMOVE_MENU) {
             Input::set_input_key();
-        } else if (new_menu == ADD_MENU) {
+        } else if (new_menu == ADD_MENU or new_menu == SET_WALLPAPER_MENU) {
             Input::set_input_string();
         } 
     }
@@ -153,6 +153,7 @@ namespace App {
         else if (menu == DURATION_MENU) DurationMenu::render();
         else if (menu == ADD_MENU) AddMenu::render();
         else if (menu == REMOVE_MENU) RemoveMenu::render();
+        else if (menu == SET_WALLPAPER_MENU) SetWallpaperMenu::render();
         else rmz::println("* Unknown Menu\n");
     }
     void update() {
@@ -165,6 +166,8 @@ namespace App {
         else if (menu == ADD_MENU) AddMenu::update();
         else if (menu == DURATION_MENU) DurationMenu::update();
         else if (menu == REMOVE_MENU) RemoveMenu::update();
+        else if (menu == SET_WALLPAPER_MENU) SetWallpaperMenu::update();
+        
     }
     void run() {
         rmz::enable_ansi();
@@ -211,7 +214,13 @@ namespace App {
                     WallpaperChangerService::stop();
 
                 } else if (c == 'a') {
-                    App::set_menu(App::ADD_MENU);
+                    // App::set_menu(App::ADD_MENU);
+                    std::string folder = OpenModernFolderPicker();
+                    if (not folder.empty()) {
+                        add_wallpaper_folder(folder);
+                    } else {
+                        App::set_info_message("No folder selected.");
+                    }
 
                 } else if (c == 't') {
                     if (WallpaperManager::get_wallpaper_count() == 0) {
@@ -230,6 +239,9 @@ namespace App {
                 
                 } else if (c == 'd') {
                     App::set_menu(App::DURATION_MENU);
+
+                } else if (c == 'm') {
+                    App::set_menu(App::SET_WALLPAPER_MENU);
 
                 } else if (c == 'p') {
                     pause_wallpaper_changer();
@@ -275,6 +287,7 @@ namespace App {
             rmz::println(" - 'o' - Set Order of Wallpapers to Sequential");
             rmz::println(" - 'r' - Set Order of Wallpapers to Random");
             rmz::println(" - 'd' - Set Duration for Wallpaper Change");
+            rmz::println(" - 'm' - Set The Wallpaper");
             rmz::println(" - 'p' - Pause Wallpaper Changer");
             rmz::println(" - 'c' - Resume Wallpaper Changer");
             rmz::println(" - 'i' - Show Parameters");
@@ -317,9 +330,10 @@ namespace App {
                     else
                         WallpaperChanger::set_duration(rmz::minutes(value));
                     App::set_info_message(rmz::format("Set duration to {} {}", value, seconds ? "seconds" : "minutes"));
-                }
+                    App::set_menu(App::MAIN_MENU);
+                } else
+                    Input::set_input_key();
                 is_getting_duration = false;
-                Input::set_input_key();
             }
         }
         void render() {
@@ -333,6 +347,7 @@ namespace App {
         }
     }
 
+    // ================ NOT USED ================
     namespace AddMenu {
         void initialize() {}
         void update() {
@@ -384,7 +399,25 @@ namespace App {
         }
     }
 
-
+    namespace SetWallpaperMenu {
+        void initialize() {}
+        void update() {
+            auto input = Input::get_input_string();
+            if (not input.empty()) {
+                if (WallpaperManager::is_valid_wallpaper(input)) {
+                    WallpaperChanger::set_wallpaper(input);
+                    App::set_wallpaper_changed_message(rmz::format("Set wallpaper to '{}'", input));
+                } else {
+                    App::set_error_message(rmz::format("Invalid wallpaper path: '{}'", input));
+                }
+            }
+            App::set_menu(App::MAIN_MENU);
+        }
+        void render() {
+            rmz::println("* Set Wallpaper Menu\n");
+            rmz::print("Enter the wallpaper path: ");
+        }
+    }
 
 
 

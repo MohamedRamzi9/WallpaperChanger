@@ -10,7 +10,7 @@
 
 
 namespace App {
-    enum menu_type { MAIN_MENU, DURATION_MENU, ADD_MENU, REMOVE_MENU} extern menu;
+    enum menu_type { MAIN_MENU, DURATION_MENU, ADD_MENU, REMOVE_MENU, SET_WALLPAPER_MENU} extern menu;
     // enum input_key_enum { UP, DOWN, LEFT, RIGHT, CHARACTER, ENTER, ESCAPE };
     // using input_key_type = std::pair<input_key_enum,char>;
 
@@ -88,6 +88,12 @@ namespace App {
     }
 
     namespace RemoveMenu {
+        void initialize();
+        void update();
+        void render();
+    }
+
+    namespace SetWallpaperMenu {
         void initialize();
         void update();
         void render();

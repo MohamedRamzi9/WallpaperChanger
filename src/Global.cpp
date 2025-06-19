@@ -5,6 +5,11 @@
 #include "Parameter.hpp"
 #include "App.hpp"
 #include "WallpaperChangerService.hpp"
+#include "Utility.hpp"
+
+#include "rmz_format.hpp"
+
+#include <shlobj.h>
 
 // std::counting_semaphore<0> pause_semaphore(0);
 // std::counting_semaphore<0> empty_semaphore(0);
@@ -12,7 +17,13 @@
 std::string save_file = "settings.wallpaper";
 bool auto_save = true;
 
-
+void add_wallpaper_folder(const std::string& folder) {
+    WallpaperManager::add_folder(folder);
+    WallpaperChanger::refresh();
+    WallpaperChangerService::notify_added_wallpaper();
+    auto [wallpapers, count] = count_wallpapers_message(folder);
+    App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
+}
 
 bool action(const std::string& input) {
     bool valid_command = true;
@@ -87,3 +98,34 @@ bool action(const std::string& input) {
 
 void pause_wallpaper_changer() { WallpaperChangerService::pause(); }
 void resume_wallpaper_changer() { WallpaperChangerService::resume(); }
+
+std::string OpenModernFolderPicker() {
+    std::string result;
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (SUCCEEDED(hr)) {
+        IFileDialog* pFileDialog = nullptr;
+        hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileDialog));
+
+        if (SUCCEEDED(hr)) {
+            DWORD options;
+            pFileDialog->GetOptions(&options);
+            pFileDialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+
+            hr = pFileDialog->Show(nullptr);
+            if (SUCCEEDED(hr)) {
+                IShellItem* pItem = nullptr;
+                if (SUCCEEDED(pFileDialog->GetResult(&pItem))) {
+                    PWSTR widePath = nullptr;
+                    if (SUCCEEDED(pItem->GetDisplayName(SIGDN_FILESYSPATH, &widePath))) {
+                        result = {widePath, widePath + wcslen(widePath)};
+                        CoTaskMemFree(widePath);
+                    }
+                    pItem->Release();
+                }
+            }
+            pFileDialog->Release();
+        }
+        CoUninitialize();
+    }
+    return result;
+}

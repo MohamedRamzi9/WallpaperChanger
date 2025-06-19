@@ -4,8 +4,9 @@
 
 # Compiler
 COMPILER = g++
-FLAGS = -std=c++26 -O0
+FLAGS = -std=c++26 -O0 
 INCLUDES = -I D:\Programmig\C++\Libraries\headers -I header
+LINK = -lole32 -lshell32 -luuid
 
 SRC_DIRS = src
 OBJ_DIRS = bin
@@ -27,7 +28,7 @@ all: $(EXEC)
 
 # Link object files to create the executable
 $(EXEC): $(OBJS)
-	$(COMPILER) $(FLAGS) -o $@ $(OBJS)
+	$(COMPILER) $(FLAGS) -o $@ $(OBJS) $(LINK)
 
 # Compile source files into object files
 $(OBJ_DIRS)/%.o: $(SRC_DIRS)/%.cpp

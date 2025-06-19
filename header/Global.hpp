@@ -15,8 +15,12 @@
 extern std::string save_file;
 extern bool auto_save;
 
+void add_wallpaper_folder(const std::string& folder);
+
 bool action(const std::string& input);
 
 
 void pause_wallpaper_changer();
 void resume_wallpaper_changer();
+
+std::string OpenModernFolderPicker();

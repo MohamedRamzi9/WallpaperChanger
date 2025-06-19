@@ -88,14 +88,10 @@ void main_function() {
 
 
 void test_function() {
-    using namespace App;
-    Input::initialize();
-    Input::set_input_key();
 
-    while (true) {
-        Input::update_input_key();
-        rmz::println("Input Virtual Key: {}", Input::input_key.Event.KeyEvent.wVirtualKeyCode);
-    }
+    std::string folder_path = OpenModernFolderPicker();
+    rmz::println("Selected folder: {}", folder_path);
+
 }
 
 int main() {
