@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "WallpaperManager.hpp"
+
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -13,5 +15,5 @@ std::string join_string(const std::vector<std::string>& vec, const std::string& 
 void left_trim(std::string &s);
 void right_trim(std::string &s);
 void trim(std::string &s);
-std::pair<std::string, int> count_wallpapers_message(const std::string& folder);
+std::string count_wallpapers_message(const std::vector<WallpaperManager::wallpaper_type>& wallpapers);
 

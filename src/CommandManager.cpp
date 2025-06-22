@@ -67,13 +67,14 @@ namespace CommandManager {
     }
 
     namespace Add {
-        std::string get_string(const std::vector<std::string>& folders) { return "add " + join_string(folders, " "); }
-        std::string get_string() { return "add <folder>"; }
-        std::string get_description() { return "Add a folder to the list of wallpaper folders and load its wallpapers."; }
-        nullable<std::string> parse(const std::string& input) {
+        std::string get_string_folders(const std::vector<std::string>& folders) { return "add folder " + join_string(folders, " "); }
+        std::string get_string_wallpapers(const std::vector<std::string>& wallpapers) { return "add wallpaper " + join_string(wallpapers, " "); }
+        std::string get_string() { return "add [folder|wallpaper] <folder,.../wallpaper,...>"; }
+        std::string get_description() { return "Add wallpapers or folders and load the wallpapers inside."; }
+        nullable<std::pair<type, std::vector<std::string>>> parse(const std::string& input) {
             auto parts = split_string(input, ' ');
-            if (parts.size() < 2 || parts[0] != "add") return {};
-            return parts[1];
+            if (parts.size() < 3 or parts[0] != "add" or (parts[1] != "folder" and parts[1] != "wallpaper")) return {};
+            return {{parts[1] == "folder" ? FOLDER : WALLPAPER, { parts.begin() + 2, parts.end() }}};
         }
         // void run(const std::string& folder) {
         //     WallpaperManager::add_folder(folder);

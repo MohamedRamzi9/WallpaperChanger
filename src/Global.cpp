@@ -11,19 +11,37 @@
 
 #include <shlobj.h>
 
-// std::counting_semaphore<0> pause_semaphore(0);
-// std::counting_semaphore<0> empty_semaphore(0);
-// std::atomic<State> state{RUNNING};
 std::string save_file = "settings.wallpaper";
 bool auto_save = true;
 
-void add_wallpaper_folder(const std::string& folder) {
-    WallpaperManager::add_folder(folder);
-    WallpaperChanger::refresh();
-    WallpaperChangerService::notify_added_wallpaper();
-    auto [wallpapers, count] = count_wallpapers_message(folder);
-    App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
+// void add_folder(const std::string& folder) {
+//     WallpaperManager::add_folder(folder);
+//     WallpaperChanger::refresh();
+//     WallpaperChangerService::notify_added_wallpaper();
+//     auto [wallpapers, count] = count_wallpapers_message(folder);
+//     App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
+// }
+void add_wallpapers(const std::vector<std::string>& wallpapers) {
+    std::vector<std::string> valid_wallpapers;
+    std::vector<std::string> invalid_wallpapers;
+    for (const auto& file : wallpapers) {
+        if (WallpaperManager::is_valid_wallpaper(file)) {
+            WallpaperManager::add_wallpaper(file);
+            valid_wallpapers.push_back(file);
+        } else {
+            invalid_wallpapers.push_back(file);
+        }
+    }
+    if (valid_wallpapers.size() > 0) {
+        auto valid_wallpapers_message = count_wallpapers_message(valid_wallpapers);
+        App::set_info_message(rmz::format("Added {} wallpapers:\n{}", valid_wallpapers.size(), valid_wallpapers_message));
+    }
+    if (invalid_wallpapers.size() > 0) {
+        auto invalid_wallpapers_message = count_wallpapers_message(invalid_wallpapers);
+        App::set_error_message(rmz::format("{} Invalid wallpapers:\n{}", invalid_wallpapers.size(), invalid_wallpapers_message));
+    }
 }
+
 
 bool action(const std::string& input) {
     bool valid_command = true;
@@ -45,7 +63,20 @@ bool action(const std::string& input) {
 
     } else if (auto result = CommandManager::Add::parse(input)) {
         // CommandManager::Add::run(result.get());
-        WallpaperManager::add_folder(result.get());
+        auto [type, paths] = result.get();
+        if (type == CommandManager::Add::FOLDER) {
+            for (const auto& folder : paths) {
+                if (WallpaperManager::is_valid_folder(folder)) {
+                    WallpaperManager::add_folder(folder);
+                }
+            }
+        } else {
+            for (const auto& wallpaper : paths) {
+                if (WallpaperManager::is_valid_wallpaper(wallpaper)) {
+                    WallpaperManager::add_wallpaper(wallpaper);
+                } 
+            }
+        }
         WallpaperChanger::refresh();
         WallpaperChangerService::notify_added_wallpaper();
 

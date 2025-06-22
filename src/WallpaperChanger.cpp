@@ -3,6 +3,8 @@
 
 #include <windows.h>
 
+#include "rmz_print.hpp"
+
 namespace WallpaperChanger {
 
 	enum change_order_type change_order;
@@ -26,6 +28,7 @@ namespace WallpaperChanger {
 		} else {
 			wallpaper = WallpaperRandomGetter::get_next_wallpaper();
 		}
+		rmz::println("Setting wallpaper: {}", wallpaper);
 		set_wallpaper(wallpaper);
 		return wallpaper;
 	}

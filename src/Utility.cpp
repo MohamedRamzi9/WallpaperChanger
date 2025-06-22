@@ -6,6 +6,8 @@
 #include <ranges>
 #include <cctype>
 
+#include "rmz_format.hpp"
+
 std::vector<std::string> split_string(const std::string& str, char delimiter) {
     std::vector<std::string> result;
 
@@ -38,22 +40,18 @@ void trim(std::string &s) {
     right_trim(s);
 }
 
-std::pair<std::string, int> count_wallpapers_message(const std::string& folder) {
+std::string count_wallpapers_message(const std::vector<WallpaperManager::wallpaper_type>& wallpapers) {
     int count = 0;
     std::string message;
 
-    for (const auto& entry : std::filesystem::directory_iterator(folder)) {
-        if (WallpaperManager::is_valid_wallpaper(entry.path())) {
-            count++;
-            if (count <= 5) {
-                message += entry.path().string() + "\n";
-            }
+    for (const auto& wallpaper : wallpapers) {
+        count++;
+        if (count <= 5) {
+            message += wallpaper + "\n";
+        } else {
+            message += rmz::format("... {} and more\n", wallpapers.size() - 5);
+            break;
         }
     }
-
-    if (count > 5) {
-        message += "... and more\n";
-    }
-
-    return {message, count};
+    return message;
 }

@@ -20,12 +20,19 @@ namespace Parameters {
     void save(const std::string& name) {
         std::ofstream file(name, std::ios::trunc);
         write_line(file, CommandManager::Duration::get_string(WallpaperChanger::get_duration()));
-        write_line(file, CommandManager::Add::get_string(WallpaperManager::get_folders()));
+        
+        write_line(file, CommandManager::Add::get_string_wallpapers(WallpaperManager::get_alone_wallpapers()));
+        std::vector<std::string> folders;
+        for (auto it = WallpaperManager::get_folders().begin() + 1; it != WallpaperManager::get_folders().end(); ++it) {
+            folders.push_back(it->path);
+        }
+        write_line(file, CommandManager::Add::get_string_folders(folders));
+        
         write_line(file, WallpaperChanger::is_change_order_sequential() 
             ? CommandManager::Order::get_string() 
             : CommandManager::Random::get_string());
-        write_line(file, CommandManager::AutoSave::get_string(auto_save));
-        // write_line(file, CommandManager::SaveFile::get_string(save_file));
+        
+            write_line(file, CommandManager::AutoSave::get_string(auto_save));
         file.close();
     }
 

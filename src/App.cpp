@@ -15,7 +15,7 @@
 
 #include "rmz_console.hpp"
 #include "rmz_print.hpp"
-
+#include "rmz_windows.hpp"
 
 
 
@@ -32,6 +32,9 @@ namespace App {
     std::atomic<bool> signal_flag = false;
     
     void initialize() { 
+        rmz::enable_ansi();
+        rmz::win::init_com();
+        
         set_menu(MAIN_MENU);
         Input::initialize(); 
         Input::set_input_key();
@@ -123,9 +126,9 @@ namespace App {
     void clear_console() { rmz::clear_console(); } 
     void set_menu(menu_type new_menu) { 
         menu = new_menu; 
-        if (new_menu == MAIN_MENU or new_menu == DURATION_MENU or new_menu == REMOVE_MENU) {
+        if (new_menu == MAIN_MENU or new_menu == ADD_MENU or new_menu == DURATION_MENU or new_menu == REMOVE_MENU) {
             Input::set_input_key();
-        } else if (new_menu == ADD_MENU or new_menu == SET_WALLPAPER_MENU) {
+        } else if ( new_menu == SET_WALLPAPER_MENU) {
             Input::set_input_string();
         } 
     }
@@ -170,7 +173,6 @@ namespace App {
         
     }
     void run() {
-        rmz::enable_ansi();
         auto treat_signal = [] {
             signal_flag.store(false);
             render();
@@ -214,13 +216,7 @@ namespace App {
                     WallpaperChangerService::stop();
 
                 } else if (c == 'a') {
-                    // App::set_menu(App::ADD_MENU);
-                    std::string folder = OpenModernFolderPicker();
-                    if (not folder.empty()) {
-                        add_wallpaper_folder(folder);
-                    } else {
-                        App::set_info_message("No folder selected.");
-                    }
+                    App::set_menu(App::ADD_MENU);
 
                 } else if (c == 't') {
                     if (WallpaperManager::get_wallpaper_count() == 0) {
@@ -260,7 +256,7 @@ namespace App {
                     App::clear_parameters();
 
                 } else if (c == 'u') {
-                    WallpaperManager::load_all_wallpapers();
+                    WallpaperManager::refresh();
                     WallpaperChanger::refresh();
                     if (WallpaperManager::get_wallpaper_count() > 0) {
                         WallpaperChangerService::notify_added_wallpaper();
@@ -269,7 +265,7 @@ namespace App {
                 } else if (c == 'f') {
                     std::string folders_message = "Wallpaper Folders:\n";
                     for (const auto& folder : WallpaperManager::get_folders()) {
-                        folders_message += folder + "\n";
+                        folders_message += folder.path + "\n";
                     }
                     App::set_info_message(folders_message);
                     
@@ -282,7 +278,7 @@ namespace App {
         void render() {
             rmz::println("* Wallpaper Changer Main Menu\n");
             rmz::println(" - 'e' - Exit");
-            rmz::println(" - 'a' - Add Wallpaper Folder");
+            rmz::println(" - 'a' - Add Wallpaper");
             rmz::println(" - 't' - Remove Wallpaper Folder");
             rmz::println(" - 'o' - Set Order of Wallpapers to Sequential");
             rmz::println(" - 'r' - Set Order of Wallpapers to Random");
@@ -351,23 +347,40 @@ namespace App {
     namespace AddMenu {
         void initialize() {}
         void update() {
-            auto folder = Input::get_input_string();
-            if (not folder.empty()) {
-                if (std::filesystem::exists(folder) && std::filesystem::is_directory(folder)) {
-                    WallpaperManager::add_folder(folder);
-                    WallpaperChanger::refresh();
-                    WallpaperChangerService::notify_added_wallpaper();
-                    auto [wallpapers, count] = count_wallpapers_message(folder);
-                    App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
-                } else {
-                    App::set_error_message(rmz::format("Invalid folder: '{}'", folder));
+            using namespace rmz::win;
+            file_dialog::init();
+            if (Input::is_key_char()) {
+                char c = Input::get_char();
+                if (c == 'w') {
+                    file_dialog::set_option_pick_files();
+                    file_dialog::set_option_multi_select();
+                    if (file_dialog::show()) {
+                        auto selected_files = file_dialog::get_results();
+                        add_wallpapers(selected_files);
+                    }
+                } else if (c == 'f') {
+                    file_dialog::set_option_pick_folders();
+                    if (file_dialog::show()) {
+                        auto selected_folder = file_dialog::get_result();
+                        if (WallpaperManager::is_valid_folder(selected_folder)) {
+                            auto& folder = WallpaperManager::add_folder(selected_folder);
+                            auto wallpapers_message = count_wallpapers_message(folder.get_wallpapers());
+                            App::set_info_message(rmz::format("Added folder: {} containing {} wallpapers:\n{}", folder.path, folder.size(), wallpapers_message));
+                        } else {
+                            App::set_error_message(rmz::format("Invalid folder path: '{}'", selected_folder));
+                        }
+                    }
                 }
+                WallpaperChanger::refresh();
+                WallpaperChangerService::notify_added_wallpaper();
             }
             App::set_menu(App::MAIN_MENU);
         }
         void render() {
             rmz::println("* Add Wallpaper Folder Menu\n");
-            rmz::print("Enter the folder path that contains the wallpapers: ");
+            rmz::println("'w' - Add Wallpaper directly");
+            rmz::println("'f' - Add Folder containing Wallpapers");
+            // rmz::print("Enter the folder path that contains the wallpapers: ");
         }
     }
 
@@ -381,11 +394,10 @@ namespace App {
             else if (Input::is_key_escape()) App::set_menu(App::MAIN_MENU);
             else if (Input::is_key_enter()) {
                 auto& folder = WallpaperManager::get_folders()[choice];
-                // CommandManager::Remove::run(folder);
-                WallpaperManager::remove_folder(folder);
+                WallpaperManager::remove_folder(choice);
                 WallpaperChanger::refresh();
                 auto [wallpapers, count] = count_wallpapers_message(folder);
-                App::set_info_message(rmz::format("Removed folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
+                App::set_info_message(rmz::format("Removed folder: '{}' containing {} wallpapers:\n{}", folder.path, count, wallpapers));
                 App::set_menu(App::MAIN_MENU);
             }
         }
@@ -394,7 +406,7 @@ namespace App {
                 if (i == choice) {
                     rmz::print("-> ");
                 }
-                rmz::println(WallpaperManager::get_folders()[i]);
+                rmz::println(WallpaperManager::get_folders()[i].path);
             }
         }
     }

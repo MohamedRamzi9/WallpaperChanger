@@ -36,10 +36,12 @@ namespace CommandManager {
     };
 
     namespace Add {
-        std::string get_string(const std::vector<std::string>& folders);
+        enum type { FOLDER, WALLPAPER };
+        std::string get_string_folders(const std::vector<std::string>& folders);
+        std::string get_string_wallpapers(const std::vector<std::string>& wallpapers);
         std::string get_string();
         std::string get_description();
-        nullable<std::string> parse(const std::string& input);
+        nullable<std::pair<type, std::vector<std::string>>> parse(const std::string& input);
         // void run(const std::string& folder);
     };
 

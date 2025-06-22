@@ -4,6 +4,7 @@
 
 #include <algorithm>
 
+#include "rmz_print.hpp"
 namespace WallpaperRandomGetter {
 
 	int current_index;

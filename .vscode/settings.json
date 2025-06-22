@@ -99,7 +99,10 @@
 		"syncstream": "cpp",
 		"typeindex": "cpp",
 		"valarray": "cpp",
-		"filesystem": "cpp"
+		"filesystem": "cpp",
+		"strstream": "cpp",
+		"flat_map": "cpp",
+		"flat_set": "cpp"
 	},
 	"C_Cpp.default.includePath": [
 		"${default}",
