@@ -362,17 +362,9 @@ namespace App {
                     file_dialog::set_option_pick_folders();
                     if (file_dialog::show()) {
                         auto selected_folder = file_dialog::get_result();
-                        if (WallpaperManager::is_valid_folder(selected_folder)) {
-                            auto& folder = WallpaperManager::add_folder(selected_folder);
-                            auto wallpapers_message = count_wallpapers_message(folder.get_wallpapers());
-                            App::set_info_message(rmz::format("Added folder: {} containing {} wallpapers:\n{}", folder.path, folder.size(), wallpapers_message));
-                        } else {
-                            App::set_error_message(rmz::format("Invalid folder path: '{}'", selected_folder));
-                        }
+                        add_folder(selected_folder);
                     }
                 }
-                WallpaperChanger::refresh();
-                WallpaperChangerService::notify_added_wallpaper();
             }
             App::set_menu(App::MAIN_MENU);
         }
@@ -390,19 +382,20 @@ namespace App {
         void update() {
             // auto [type, c] = Input::get_input_key();
             if (Input::is_key_up() and choice > 0) choice--;
-            else if (Input::is_key_down() and choice < WallpaperManager::get_folders().size() - 1) choice++;
+            else if (Input::is_key_down() and choice < WallpaperManager::get_folders().size() - 2) choice++;
             else if (Input::is_key_escape()) App::set_menu(App::MAIN_MENU);
             else if (Input::is_key_enter()) {
+                choice++;
                 auto& folder = WallpaperManager::get_folders()[choice];
                 WallpaperManager::remove_folder(choice);
                 WallpaperChanger::refresh();
-                auto [wallpapers, count] = count_wallpapers_message(folder);
-                App::set_info_message(rmz::format("Removed folder: '{}' containing {} wallpapers:\n{}", folder.path, count, wallpapers));
+                auto wallpapers = count_wallpapers_message(folder.get_wallpapers());
+                App::set_info_message(rmz::format("Removed folder: '{}' containing {} wallpapers:\n{}", folder.path, folder.size(), wallpapers));
                 App::set_menu(App::MAIN_MENU);
             }
         }
         void render() {
-            for (int i = 0; i < WallpaperManager::get_folders().size(); i++) {
+            for (int i = 1; i < WallpaperManager::get_folders().size(); i++) {
                 if (i == choice) {
                     rmz::print("-> ");
                 }

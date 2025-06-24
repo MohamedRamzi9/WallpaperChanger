@@ -10,7 +10,7 @@
 extern std::string save_file;
 extern bool auto_save;
 
-// void add_folder(const std::string& folder);
+void add_folder(const std::string& folder);
 void add_wallpapers(const std::vector<std::string>& wallpapers);
 
 bool action(const std::string& input);

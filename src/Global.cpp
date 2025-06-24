@@ -14,13 +14,17 @@
 std::string save_file = "settings.wallpaper";
 bool auto_save = true;
 
-// void add_folder(const std::string& folder) {
-//     WallpaperManager::add_folder(folder);
-//     WallpaperChanger::refresh();
-//     WallpaperChangerService::notify_added_wallpaper();
-//     auto [wallpapers, count] = count_wallpapers_message(folder);
-//     App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder, count, wallpapers));
-// }
+void add_folder(const std::string& path) {
+    if (WallpaperManager::is_valid_folder(path)) {
+        auto& folder = WallpaperManager::add_folder(path);
+        WallpaperChanger::refresh();
+        WallpaperChangerService::notify_added_wallpaper();
+        auto message = count_wallpapers_message(folder.get_wallpapers());
+        App::set_info_message(rmz::format("Added folder: '{}' containing {} wallpapers:\n{}", folder.path, folder.size(), message));
+    } else {
+        App::set_error_message(rmz::format("Invalid folder path: '{}'", path));
+    }
+}
 void add_wallpapers(const std::vector<std::string>& wallpapers) {
     std::vector<std::string> valid_wallpapers;
     std::vector<std::string> invalid_wallpapers;
@@ -40,6 +44,8 @@ void add_wallpapers(const std::vector<std::string>& wallpapers) {
         auto invalid_wallpapers_message = count_wallpapers_message(invalid_wallpapers);
         App::set_error_message(rmz::format("{} Invalid wallpapers:\n{}", invalid_wallpapers.size(), invalid_wallpapers_message));
     }
+    WallpaperChanger::refresh();
+    WallpaperChangerService::notify_added_wallpaper();
 }
 
 
@@ -66,19 +72,11 @@ bool action(const std::string& input) {
         auto [type, paths] = result.get();
         if (type == CommandManager::Add::FOLDER) {
             for (const auto& folder : paths) {
-                if (WallpaperManager::is_valid_folder(folder)) {
-                    WallpaperManager::add_folder(folder);
-                }
+                add_folder(folder);
             }
         } else {
-            for (const auto& wallpaper : paths) {
-                if (WallpaperManager::is_valid_wallpaper(wallpaper)) {
-                    WallpaperManager::add_wallpaper(wallpaper);
-                } 
-            }
+            add_wallpapers(paths);
         }
-        WallpaperChanger::refresh();
-        WallpaperChangerService::notify_added_wallpaper();
 
     } else if (CommandManager::Resume::parse(input)) {
         // CommandManager::Resume::run();
